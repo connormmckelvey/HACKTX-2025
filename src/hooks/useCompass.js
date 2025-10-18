@@ -8,6 +8,11 @@ export const useCompass = () => {
   const [isSupported, setIsSupported] = useState(false);
   const [isCalibrating, setIsCalibrating] = useState(false);
 
+  // Initialize calibrateCompass as a no-op function that will be replaced if sensors are available
+  const [calibrateCompass, setCalibrateCompass] = useState(() => () => {
+    console.warn('Compass calibration not available - sensors not initialized yet');
+  });
+
   // Sensor fusion variables
   const alpha = 0.8; // Low-pass filter coefficient
   const filteredHeading = useRef(0);
@@ -66,6 +71,9 @@ export const useCompass = () => {
 
     if (!platformSupported) {
       setIsSupported(false);
+      setCalibrateCompass(() => () => {
+        console.warn('Compass calibration not available on this platform');
+      });
       return;
     }
 
@@ -128,7 +136,7 @@ export const useCompass = () => {
     };
 
     // Calibration function
-    const calibrateCompass = () => {
+    const calibrationFunction = () => {
       setIsCalibrating(true);
       calibrationSamples.current = [];
 
@@ -145,6 +153,9 @@ export const useCompass = () => {
 
       return () => clearTimeout(calibrationTimeout);
     };
+
+    // Set the calibration function once sensors are available
+    setCalibrateCompass(() => calibrationFunction);
 
     // Fallback function using DeviceMotion
     const fallbackToDeviceMotion = async () => {
@@ -171,10 +182,18 @@ export const useCompass = () => {
           magnetometerSubscription = subscription;
         } else {
           setIsSupported(false);
+          // Set a no-op calibration function for unsupported platforms
+          setCalibrateCompass(() => () => {
+            console.warn('Compass calibration not available on this platform');
+          });
         }
       } catch (fallbackError) {
         console.warn('DeviceMotion fallback not available:', fallbackError);
         setIsSupported(false);
+        // Set a no-op calibration function for unsupported platforms
+        setCalibrateCompass(() => () => {
+          console.warn('Compass calibration not available on this platform');
+        });
       }
     };
 

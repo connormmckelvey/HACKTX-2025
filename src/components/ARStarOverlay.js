@@ -9,6 +9,16 @@ const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 export const ARStarOverlay = ({ location, cameraMode = true, showDaytimeOverlay = true }) => {
   const { heading, isSupported, isCalibrating, calibrateCompass } = useCompass();
+
+  // Debug logging to troubleshoot the calibrateCompass issue
+  useEffect(() => {
+    console.log('useCompass hook result:', {
+      heading,
+      isSupported,
+      isCalibrating,
+      calibrateCompass: typeof calibrateCompass
+    });
+  }, [heading, isSupported, isCalibrating, calibrateCompass]);
   const [starPositions, setStarPositions] = useState([]);
   const [visibleStars, setVisibleStars] = useState([]);
   const [hasPermission, setHasPermission] = useState(null);
@@ -53,14 +63,22 @@ export const ARStarOverlay = ({ location, cameraMode = true, showDaytimeOverlay 
   };
 
   const handleCalibrateCompass = () => {
-    Alert.alert(
-      "Compass Calibration",
-      "Point your device towards true north and keep it steady for 10 seconds.",
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Calibrate", onPress: calibrateCompass }
-      ]
-    );
+    if (typeof calibrateCompass === 'function') {
+      Alert.alert(
+        "Compass Calibration",
+        "Point your device towards true north and keep it steady for 10 seconds.",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Calibrate", onPress: calibrateCompass }
+        ]
+      );
+    } else {
+      Alert.alert(
+        "Calibration Unavailable",
+        "Compass calibration is not available on this device.",
+        [{ text: "OK" }]
+      );
+    }
   };
 
   // Convert azimuth/altitude to screen coordinates
@@ -344,7 +362,7 @@ export const ARStarOverlay = ({ location, cameraMode = true, showDaytimeOverlay 
       )}
 
       {/* Calibration button */}
-      {isSupported && (
+      {isSupported && typeof calibrateCompass === 'function' && (
         <TouchableOpacity
           style={[styles.calibrationButton, isCalibrating && styles.calibratingButton]}
           onPress={handleCalibrateCompass}

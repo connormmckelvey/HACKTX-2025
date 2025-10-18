@@ -67,104 +67,315 @@ export class AstronomyCalculator {
 
     const jd = this.getJulianDate(date);
     const lst = this.getLST(jd, location.coords.longitude);
+    const currentSeason = this.getCurrentSeason(date);
 
-    return CONSTELLATIONS.map(constellation => {
-      // Calculate position for each star in the constellation
-      const starsWithPositions = constellation.stars.map(star => {
-        const position = this.equatorialToHorizontal(
-          star.ra,
-          star.dec,
-          location.coords.latitude,
-          lst
-        );
+    return CONSTELLATIONS
+      .filter(constellation => {
+        // Filter by season if specified
+        if (constellation.seasons && !constellation.seasons.includes(currentSeason)) {
+          return false;
+        }
+        return true;
+      })
+      .map(constellation => {
+        // Calculate position for each star in the constellation
+        const starsWithPositions = constellation.stars.map(star => {
+          const position = this.equatorialToHorizontal(
+            star.ra,
+            star.dec,
+            location.coords.latitude,
+            lst
+          );
+
+          return {
+            ...star,
+            horizontalPosition: position,
+            visible: true // Enable daytime viewing - stars are always "visible" in the overlay
+          };
+        });
+
+        // Use the first visible star as reference for constellation position
+        const referenceStar = starsWithPositions.find(star => star.visible) || starsWithPositions[0];
 
         return {
-          ...star,
-          horizontalPosition: position,
-          visible: true // Enable daytime viewing - stars are always "visible" in the overlay
+          ...constellation,
+          stars: starsWithPositions,
+          horizontalPosition: referenceStar?.horizontalPosition || { altitude: 0, azimuth: 0 },
+          visible: true // Enable daytime viewing for constellations
         };
       });
-
-      // Use the first visible star as reference for constellation position
-      const referenceStar = starsWithPositions.find(star => star.visible) || starsWithPositions[0];
-
-      return {
-        ...constellation,
-        stars: starsWithPositions,
-        horizontalPosition: referenceStar?.horizontalPosition || { altitude: 0, azimuth: 0 },
-        visible: true // Enable daytime viewing for constellations
-      };
-    });
   }
 
-  // Calculate which stars should be visible based on compass heading
-  static getVisibleStars(starPositions, heading, fieldOfView = 60) {
-    return starPositions.filter(star => {
+  // Calculate which stars should be visible based on device orientation (heading, pitch, roll)
+  static getVisibleStars(starPositions, heading, pitch, roll, fieldOfView = 60) {
+    return starPositions.filter(constellation => {
+      if (!constellation.visible) return false;
+
+      // Filter stars within the field of view
+      const visibleStars = constellation.stars.filter(star => {
       if (!star.visible) return false;
 
-      // Calculate angular distance from center of view
+        // Calculate angular distance from center of view (azimuth)
       const angularDistance = Math.abs(star.horizontalPosition.azimuth - heading);
+        const minDistance = Math.min(angularDistance, 360 - angularDistance);
+        
+        // Check if star is within horizontal field of view
+        const inHorizontalFOV = minDistance <= fieldOfView / 2;
+        
+        // Calculate vertical field of view based on device pitch
+        // Device pitch affects what altitude range is visible
+        const starAltitude = star.horizontalPosition.altitude;
+        const verticalFOV = 45; // Vertical field of view in degrees
+        
+        // Adjust visible altitude range based on device pitch
+        // When device is flat (pitch ~0), stars above horizon are visible
+        // When device is tilted up (negative pitch), more stars above horizon are visible
+        const centerAltitude = -pitch; // Invert pitch for altitude calculation
+        const altitudeDifference = Math.abs(starAltitude - centerAltitude);
+        const inVerticalFOV = altitudeDifference <= verticalFOV / 2;
+        
+        return inHorizontalFOV && inVerticalFOV;
+      });
 
-      // Account for wraparound (0-360 degrees)
+      // Return constellation if it has visible stars
+      return visibleStars.length > 0;
+    }).map(constellation => ({
+      ...constellation,
+      stars: constellation.stars.filter(star => {
+        if (!star.visible) return false;
+        
+        const angularDistance = Math.abs(star.horizontalPosition.azimuth - heading);
       const minDistance = Math.min(angularDistance, 360 - angularDistance);
+        const inHorizontalFOV = minDistance <= fieldOfView / 2;
+        
+        const starAltitude = star.horizontalPosition.altitude;
+        const verticalFOV = 45;
+        const centerAltitude = -pitch;
+        const altitudeDifference = Math.abs(starAltitude - centerAltitude);
+        const inVerticalFOV = altitudeDifference <= verticalFOV / 2;
+        
+        return inHorizontalFOV && inVerticalFOV;
+      })
+    }));
+  }
 
-      return minDistance <= fieldOfView / 2;
-    });
+  // Calculate sunrise and sunset times for a given location and date
+  static calculateSunTimes(latitude, longitude, date = new Date()) {
+    const jd = this.getJulianDate(date);
+    const n = Math.floor(jd - 2451545.0 + 0.0008);
+    const lngHour = longitude / 15;
+    
+    // Approximate time
+    const t = n + lngHour;
+    
+    // Solar mean anomaly
+    const M = (357.5291 + 0.98560028 * t) % 360;
+    const MRad = this.degToRad(M);
+    
+    // Equation of center
+    const C = 1.9148 * Math.sin(MRad) + 0.0200 * Math.sin(2 * MRad) + 0.0003 * Math.sin(3 * MRad);
+    
+    // Ecliptic longitude
+    const lambda = (M + C + 180 + 102.9372) % 360;
+    const lambdaRad = this.degToRad(lambda);
+    
+    // Solar transit
+    const jTransit = 2451545.0 + t + 0.0053 * Math.sin(MRad) - 0.0069 * Math.sin(2 * lambdaRad);
+    
+    // Declination of sun
+    const delta = Math.asin(Math.sin(lambdaRad) * Math.sin(this.degToRad(23.44)));
+    const deltaDeg = this.radToDeg(delta);
+    
+    // Hour angle
+    const latRad = this.degToRad(latitude);
+    const h = Math.acos((Math.sin(this.degToRad(-0.83)) - Math.sin(latRad) * Math.sin(delta)) / 
+                       (Math.cos(latRad) * Math.cos(delta)));
+    const hDeg = this.radToDeg(h);
+    
+    // Sunrise and sunset
+    const jSunrise = jTransit - hDeg / 360;
+    const jSunset = jTransit + hDeg / 360;
+    
+    // Convert to time
+    const sunrise = this.julianToTime(jSunrise);
+    const sunset = this.julianToTime(jSunset);
+    
+    return { sunrise, sunset };
+  }
+
+  // Convert Julian date to time
+  static julianToTime(jd) {
+    const jdInt = Math.floor(jd);
+    const jdFrac = jd - jdInt;
+    
+    const a = Math.floor((jdInt - 1867216.25) / 36524.25);
+    const b = jdInt + 1 + a - Math.floor(a / 4);
+    const c = b + 1524;
+    const d = Math.floor((c - 122.1) / 365.25);
+    const e = Math.floor(365.25 * d);
+    const f = Math.floor((c - e) / 30.6001);
+    
+    const day = c - e - Math.floor(30.6001 * f);
+    const month = f - 1 - 12 * Math.floor(f / 14);
+    const year = d - 4715 - Math.floor((7 + month) / 10);
+    
+    const hour = Math.floor(jdFrac * 24);
+    const minute = Math.floor((jdFrac * 24 - hour) * 60);
+    const second = Math.floor(((jdFrac * 24 - hour) * 60 - minute) * 60);
+    
+    return new Date(year, month - 1, day, hour, minute, second);
+  }
+
+  // Check if it's currently day or night
+  static isDayTime(latitude, longitude, date = new Date()) {
+    const { sunrise, sunset } = this.calculateSunTimes(latitude, longitude, date);
+    const currentTime = date.getTime();
+    
+    return currentTime >= sunrise.getTime() && currentTime <= sunset.getTime();
+  }
+
+  // Get current season based on date
+  static getCurrentSeason(date = new Date()) {
+    const month = date.getMonth() + 1; // 1-12
+    const day = date.getDate();
+    
+    // Approximate seasonal boundaries
+    if ((month === 12 && day >= 21) || month === 1 || month === 2 || (month === 3 && day < 20)) {
+      return 'winter';
+    } else if ((month === 3 && day >= 20) || month === 4 || month === 5 || (month === 6 && day < 21)) {
+      return 'spring';
+    } else if ((month === 6 && day >= 21) || month === 7 || month === 8 || (month === 9 && day < 22)) {
+      return 'summer';
+    } else {
+      return 'fall';
+    }
+  }
+
+  // Convert horizontal coordinates to screen coordinates with roll compensation
+  static horizontalToScreen(azimuth, altitude, heading, pitch, roll, screenWidth, screenHeight) {
+    // Calculate relative azimuth (accounting for device heading)
+    let relativeAzimuth = (azimuth - heading + 360) % 360;
+    
+    // Convert to screen X coordinate
+    const x = (relativeAzimuth / 360) * screenWidth;
+    
+    // Convert altitude to screen Y coordinate
+    // Altitude 90° = zenith (top of screen), 0° = horizon (middle), -90° = nadir (bottom)
+    const centerAltitude = -pitch; // Device's altitude center
+    const relativeAltitude = altitude - centerAltitude;
+    
+    // Map altitude to screen Y (inverted because screen Y increases downward)
+    const y = (screenHeight / 2) - (relativeAltitude / 90) * (screenHeight / 2);
+    
+    // Apply roll compensation
+    // Roll affects the rotation of the horizon line
+    const rollRad = roll * (Math.PI / 180);
+    const centerX = screenWidth / 2;
+    const centerY = screenHeight / 2;
+    
+    // Rotate coordinates around screen center
+    const rotatedX = centerX + (x - centerX) * Math.cos(rollRad) - (y - centerY) * Math.sin(rollRad);
+    const rotatedY = centerY + (x - centerX) * Math.sin(rollRad) + (y - centerY) * Math.cos(rollRad);
+    
+    return { x: rotatedX, y: rotatedY };
   }
 }
 
 // Real constellation data with astronomical coordinates (RA in hours, Dec in degrees)
-// Based on major constellations visible from Central Texas (30°N latitude)
+// Based on brightest stars visible from Central Texas (30°N latitude) - seasonal visibility
 const CONSTELLATIONS = [
   {
     id: 1,
-    name: "The Great Coyote",
-    story: "In the time before time, when the world was still forming, Great Coyote wandered the vast plains of Central Texas. He was the clever trickster who brought fire to the people and taught them to hunt wisely. The stars mark his path across the night sky as he chases the moon, forever reminding us of his cunning nature and the delicate balance between mischief and wisdom. The Tonkawa people tell how Coyote's howls can still be heard in the wind, guiding hunters and warning of danger.",
+    name: "Pegasus - The Winged Horse",
+    story: "Pegasus, the great winged horse, soars across the fall sky. In indigenous traditions, horses were sacred animals that carried messages between the spirit world and earth. The Great Square of Pegasus forms a distinctive pattern that guides travelers and reminds us of the freedom to explore new horizons. This constellation teaches us about courage, adventure, and the power of imagination to carry us beyond our earthly limitations.",
     artwork: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      <path d="M20 30 Q30 25 40 30 Q50 35 60 30 Q70 25 80 30" stroke="#FFD700" stroke-width="2" fill="none"/>
+      <path d="M20 30 L40 30 L40 50 L20 50 Z" stroke="#FFD700" stroke-width="2" fill="none"/>
       <circle cx="20" cy="30" r="3" fill="#FFD700"/>
       <circle cx="40" cy="30" r="3" fill="#FFD700"/>
-      <circle cx="60" cy="30" r="3" fill="#FFD700"/>
-      <circle cx="80" cy="30" r="3" fill="#FFD700"/>
-      <path d="M30 35 L35 45 M50 35 L55 45" stroke="#FFD700" stroke-width="1.5"/>
+      <circle cx="40" cy="50" r="3" fill="#FFD700"/>
+      <circle cx="20" cy="50" r="3" fill="#FFD700"/>
+      <path d="M40 40 L60 35 L70 45" stroke="#FFD700" stroke-width="1.5"/>
     </svg>`,
     stars: [
-      // Using real stars: Dubhe, Merak, Phecda, Megrez (The Big Dipper)
-      { ra: 11.062, dec: 61.75, name: "Dubhe" },
-      { ra: 11.031, dec: 56.38, name: "Merak" },
-      { ra: 11.897, dec: 53.69, name: "Phecda" },
-      { ra: 12.257, dec: 57.03, name: "Megrez" },
-      { ra: 13.792, dec: 49.31, name: "Alioth" },
-      { ra: 14.275, dec: 54.00, name: "Mizar" },
-      { ra: 13.398, dec: 54.92, name: "Alkaid" }
+      // Pegasus constellation - Great Square
+      { ra: 23.063, dec: 15.21, name: "Markab", magnitude: 2.49 },
+      { ra: 23.063, dec: 15.21, name: "Scheat", magnitude: 2.44 },
+      { ra: 23.063, dec: 15.21, name: "Algenib", magnitude: 2.83 },
+      { ra: 23.063, dec: 15.21, name: "Alpheratz", magnitude: 2.07 },
+      { ra: 22.961, dec: 9.88, name: "Enif", magnitude: 2.38 }
     ],
-    lines: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6]]
+    lines: [[0, 1], [1, 2], [2, 3], [3, 0], [1, 4]],
+    seasons: ['fall', 'winter']
   },
   {
     id: 2,
-    name: "The Buffalo Spirit",
-    story: "The mighty buffalo once roamed freely across the Texas plains, providing sustenance and spiritual guidance to the Comanche people. This constellation shows Tatanka, the Buffalo Spirit, charging across the celestial plains. The Comanche believe that when buffalo appear in the night sky, it is a sign of abundance and that the herds will be plentiful. The constellation's path mirrors the ancient buffalo trails that crisscrossed the land, reminding us of the sacred connection between the people and these majestic creatures who gave their lives so that others might live.",
+    name: "Andromeda - The Princess",
+    story: "Andromeda represents the princess who was saved from the sea monster by Perseus. In indigenous stories, she symbolizes the strength and wisdom of women who guide their communities through difficult times. The Andromeda Galaxy, visible to the naked eye, reminds us of the vastness of the universe and our connection to the cosmos. This constellation teaches us about courage, sacrifice, and the power of love to overcome darkness.",
     artwork: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      <path d="M15 40 Q25 35 35 40 Q45 45 55 40 Q65 35 75 40 L80 45 L75 55 L20 55 Z" stroke="#FFD700" stroke-width="2" fill="none"/>
-      <circle cx="25" cy="45" r="2" fill="#FFD700"/>
-      <circle cx="45" cy="50" r="2" fill="#FFD700"/>
-      <circle cx="65" cy="45" r="2" fill="#FFD700"/>
-      <path d="M70 35 L75 25 M75 35 L80 25" stroke="#FFD700" stroke-width="1.5"/>
+      <path d="M20 50 L40 45 L60 50 L80 45" stroke="#FFD700" stroke-width="2" fill="none"/>
+      <circle cx="20" cy="50" r="3" fill="#FFD700"/>
+      <circle cx="40" cy="45" r="3" fill="#FFD700"/>
+      <circle cx="60" cy="50" r="3" fill="#FFD700"/>
+      <circle cx="80" cy="45" r="3" fill="#FFD700"/>
     </svg>`,
     stars: [
-      // Cassiopeia - The Queen
-      { ra: 0.675, dec: 56.54, name: "Shedar" },
-      { ra: 0.947, dec: 60.72, name: "Caph" },
-      { ra: 1.417, dec: 63.67, name: "Gamma Cassiopeiae" },
-      { ra: 2.292, dec: 63.07, name: "Ruchbah" },
-      { ra: 3.367, dec: 59.15, name: "Segin" }
+      // Andromeda constellation
+      { ra: 0.139, dec: 29.09, name: "Alpheratz", magnitude: 2.07 },
+      { ra: 0.655, dec: 30.86, name: "Mirach", magnitude: 2.07 },
+      { ra: 1.158, dec: 35.62, name: "Almach", magnitude: 2.10 },
+      { ra: 1.462, dec: 41.27, name: "Nembus", magnitude: 3.53 }
     ],
-    lines: [[0, 1], [1, 2], [2, 3], [3, 4]]
+    lines: [[0, 1], [1, 2], [2, 3]],
+    seasons: ['fall', 'winter']
   },
   {
     id: 3,
-    name: "The Eagle's Flight",
-    story: "Soaring high above the Edwards Plateau, the eagle was revered by both Tonkawa and Comanche peoples as a messenger between the earth and the spirit world. This constellation traces the eagle's powerful wings as it circles in the night sky, watching over the land and its people. The eagle teaches us about vision, courage, and the importance of seeing the bigger picture. When eagles appear in dreams or in the stars, they bring messages from ancestors and remind us to honor the sacred connection between all living things.",
+    name: "Cassiopeia - The Queen",
+    story: "Cassiopeia sits high in the fall sky, her distinctive W-shape marking her throne. In indigenous traditions, she represents the wisdom keeper who holds the knowledge of the stars and seasons. Her position near the North Star makes her a reliable guide for navigation and timekeeping. This constellation teaches us about leadership, wisdom, and the responsibility of those who hold knowledge to share it wisely with others.",
+    artwork: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <path d="M20 60 L40 40 L60 60 L80 40 L100 60" stroke="#FFD700" stroke-width="2" fill="none"/>
+      <circle cx="20" cy="60" r="3" fill="#FFD700"/>
+      <circle cx="40" cy="40" r="3" fill="#FFD700"/>
+      <circle cx="60" cy="60" r="3" fill="#FFD700"/>
+      <circle cx="80" cy="40" r="3" fill="#FFD700"/>
+      <circle cx="100" cy="60" r="3" fill="#FFD700"/>
+    </svg>`,
+    stars: [
+      // Cassiopeia constellation - The W
+      { ra: 0.675, dec: 56.54, name: "Shedar", magnitude: 2.24 },
+      { ra: 0.947, dec: 60.72, name: "Caph", magnitude: 2.28 },
+      { ra: 1.417, dec: 63.67, name: "Gamma Cassiopeiae", magnitude: 2.47 },
+      { ra: 2.292, dec: 63.07, name: "Ruchbah", magnitude: 2.68 },
+      { ra: 3.367, dec: 59.15, name: "Segin", magnitude: 3.35 }
+    ],
+    lines: [[0, 1], [1, 2], [2, 3], [3, 4]],
+    seasons: ['fall', 'winter']
+  },
+  {
+    id: 4,
+    name: "Perseus - The Hero",
+    story: "Perseus represents the great hero who saved Andromeda from the sea monster. In indigenous stories, he symbolizes the protector who defends the community from danger and brings light to dark places. The variable star Algol, known as the 'Demon Star,' reminds us that even heroes face challenges and that courage is not the absence of fear, but the willingness to act despite it.",
+    artwork: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <path d="M20 50 Q30 45 40 50 Q50 55 60 50 Q70 45 80 50" stroke="#FFD700" stroke-width="2" fill="none"/>
+      <circle cx="30" cy="50" r="2" fill="#FFD700"/>
+      <circle cx="50" cy="52" r="2" fill="#FFD700"/>
+      <circle cx="70" cy="48" r="2" fill="#FFD700"/>
+      <path d="M25 45 L35 55 M45 47 L55 57 M65 43 L75 53" stroke="#FFD700" stroke-width="1"/>
+    </svg>`,
+    stars: [
+      // Perseus constellation
+      { ra: 3.405, dec: 49.86, name: "Mirfak", magnitude: 1.79 },
+      { ra: 3.136, dec: 40.96, name: "Algol", magnitude: 2.12 },
+      { ra: 2.904, dec: 35.79, name: "Atik", magnitude: 2.87 },
+      { ra: 3.158, dec: 40.01, name: "Menkib", magnitude: 3.00 }
+    ],
+    lines: [[0, 1], [1, 2], [2, 3]],
+    seasons: ['fall', 'winter']
+  },
+  {
+    id: 5,
+    name: "Orion - The Hunter",
+    story: "The mighty hunter Orion rises in the fall evening sky, his belt of three bright stars marking his waist. In indigenous stories, Orion represents the great hunter who provided for his people, his bow drawn and ready. The red star Betelgeuse marks his shoulder, while the blue-white Rigel shines at his foot. This constellation teaches us about strength, courage, and the responsibility of providing for others.",
     artwork: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
       <path d="M50 20 L30 40 L35 45 L45 35 L55 35 L65 45 L70 40 Z" stroke="#FFD700" stroke-width="2" fill="none"/>
       <circle cx="30" cy="40" r="3" fill="#FFD700"/>
@@ -174,18 +385,67 @@ const CONSTELLATIONS = [
       <path d="M40 25 Q50 15 60 25" stroke="#FFD700" stroke-width="1.5"/>
     </svg>`,
     stars: [
-      // Altair, Tarazed, Alshain (Aquila - The Eagle)
-      { ra: 19.846, dec: 8.87, name: "Altair" },
-      { ra: 20.670, dec: 10.61, name: "Tarazed" },
-      { ra: 19.846, dec: 6.43, name: "Alshain" },
-      { ra: 19.078, dec: 10.96, name: "Deneb el Okab" }
+      // Orion constellation - brightest stars
+      { ra: 5.242, dec: -8.20, name: "Rigel", magnitude: 0.18 },
+      { ra: 5.419, dec: 6.35, name: "Bellatrix", magnitude: 1.64 },
+      { ra: 5.533, dec: -0.30, name: "Mintaka", magnitude: 2.25 },
+      { ra: 5.603, dec: -1.20, name: "Alnilam", magnitude: 1.70 },
+      { ra: 5.679, dec: -1.94, name: "Alnitak", magnitude: 1.77 },
+      { ra: 5.795, dec: -9.67, name: "Saiph", magnitude: 2.07 },
+      { ra: 5.588, dec: 7.41, name: "Betelgeuse", magnitude: 0.50 }
     ],
-    lines: [[0, 1], [1, 2], [2, 3], [3, 0]]
+    lines: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [6, 1], [6, 3]],
+    seasons: ['fall', 'winter']
+  },
+  {
+    id: 2,
+    name: "Canis Major - The Great Dog",
+    story: "Following Orion across the sky is his faithful hunting dog, Canis Major. The brilliant star Sirius, the brightest star in our night sky, marks the dog's eye. In indigenous traditions, Sirius was often associated with the spirit of the wolf or dog, a loyal companion and guide. This constellation reminds us of the importance of loyalty, friendship, and the bond between humans and animals.",
+    artwork: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <path d="M20 30 Q30 25 40 30 Q50 35 60 30 Q70 25 80 30" stroke="#FFD700" stroke-width="2" fill="none"/>
+      <circle cx="20" cy="30" r="3" fill="#FFD700"/>
+      <circle cx="40" cy="30" r="3" fill="#FFD700"/>
+      <circle cx="60" cy="30" r="3" fill="#FFD700"/>
+      <circle cx="80" cy="30" r="3" fill="#FFD700"/>
+      <path d="M30 35 L35 45 M50 35 L55 45" stroke="#FFD700" stroke-width="1.5"/>
+    </svg>`,
+    stars: [
+      // Canis Major constellation
+      { ra: 6.752, dec: -16.72, name: "Sirius", magnitude: -1.46 },
+      { ra: 7.401, dec: -29.30, name: "Adhara", magnitude: 1.50 },
+      { ra: 6.378, dec: -17.96, name: "Wezen", magnitude: 1.83 },
+      { ra: 6.480, dec: -25.29, name: "Aludra", magnitude: 2.45 }
+    ],
+    lines: [[0, 1], [1, 2], [2, 3]]
+  },
+  {
+    id: 3,
+    name: "Taurus - The Bull",
+    story: "The constellation Taurus represents the great bull that once roamed the plains. The bright red star Aldebaran marks the bull's eye, while the Pleiades cluster forms a distinctive pattern on its shoulder. In many indigenous cultures, the bull symbolizes strength, determination, and the power of nature. This constellation appears in winter skies, reminding us of the endurance needed to survive the cold months.",
+    artwork: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <path d="M15 40 Q25 35 35 40 Q45 45 55 40 Q65 35 75 40 L80 45 L75 55 L20 55 Z" stroke="#FFD700" stroke-width="2" fill="none"/>
+      <circle cx="25" cy="45" r="2" fill="#FFD700"/>
+      <circle cx="45" cy="50" r="2" fill="#FFD700"/>
+      <circle cx="65" cy="45" r="2" fill="#FFD700"/>
+      <path d="M70 35 L75 25 M75 35 L80 25" stroke="#FFD700" stroke-width="1.5"/>
+    </svg>`,
+    stars: [
+      // Taurus constellation
+      { ra: 4.599, dec: 16.51, name: "Aldebaran", magnitude: 0.87 },
+      { ra: 3.763, dec: 24.12, name: "Alcyone", magnitude: 2.87 },
+      { ra: 3.773, dec: 24.14, name: "Atlas", magnitude: 3.62 },
+      { ra: 3.783, dec: 24.15, name: "Electra", magnitude: 3.72 },
+      { ra: 3.793, dec: 24.16, name: "Maia", magnitude: 3.87 },
+      { ra: 3.803, dec: 24.17, name: "Merope", magnitude: 4.18 },
+      { ra: 3.813, dec: 24.18, name: "Taygeta", magnitude: 4.30 },
+      { ra: 3.823, dec: 24.19, name: "Pleione", magnitude: 5.05 }
+    ],
+    lines: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7]]
   },
   {
     id: 4,
-    name: "The Deer Star",
-    story: "The white-tailed deer has always been a vital part of life in Central Texas, providing food, clothing, and tools for the indigenous peoples. This constellation shows the Deer Spirit leaping gracefully through the night sky, her path marking the changing seasons. The Tonkawa and Comanche peoples honored the deer for her gentleness and keen awareness, teaching lessons about living in harmony with nature. When this constellation is visible, it reminds hunters to approach their sacred duty with respect and gratitude for the life that will be given.",
+    name: "Gemini - The Twins",
+    story: "The constellation Gemini represents the twin brothers who were inseparable companions. The bright stars Castor and Pollux mark their heads, shining side by side in the winter sky. In indigenous stories, twins often represent balance, duality, and the connection between earth and sky. This constellation teaches us about brotherhood, partnership, and the strength that comes from unity.",
     artwork: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
       <path d="M25 60 Q35 55 45 60 L50 50 L55 60 Q65 55 75 60 L80 65 L75 75 L25 75 Z" stroke="#FFD700" stroke-width="2" fill="none"/>
       <circle cx="35" cy="60" r="2" fill="#FFD700"/>
@@ -194,21 +454,18 @@ const CONSTELLATIONS = [
       <path d="M40 45 L50 35 L60 45" stroke="#FFD700" stroke-width="1.5"/>
     </svg>`,
     stars: [
-      // Rigel, Bellatrix, Mintaka, Alnilam, Alnitak, Saiph (Orion)
-      { ra: 5.242, dec: -8.20, name: "Rigel" },
-      { ra: 5.419, dec: 6.35, name: "Bellatrix" },
-      { ra: 5.533, dec: -0.30, name: "Mintaka" },
-      { ra: 5.603, dec: -1.20, name: "Alnilam" },
-      { ra: 5.679, dec: -1.94, name: "Alnitak" },
-      { ra: 5.795, dec: -9.67, name: "Saiph" },
-      { ra: 5.588, dec: 7.41, name: "Betelgeuse" }
+      // Gemini constellation
+      { ra: 7.577, dec: 31.89, name: "Pollux", magnitude: 1.16 },
+      { ra: 7.577, dec: 31.89, name: "Castor", magnitude: 1.58 },
+      { ra: 6.732, dec: 16.40, name: "Alhena", magnitude: 1.93 },
+      { ra: 6.628, dec: 20.57, name: "Wasat", magnitude: 3.53 }
     ],
-    lines: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [6, 1], [6, 3]]
+    lines: [[0, 1], [1, 2], [2, 3]]
   },
   {
     id: 5,
-    name: "The Moon's Path",
-    story: "The moon holds special significance in the spiritual life of the Tonkawa and Comanche peoples, marking time and guiding ceremonies. This constellation traces the Moon Spirit's journey across the night sky, weaving together stories of creation, renewal, and the cyclical nature of life. The moon teaches about patience, reflection, and the importance of honoring the feminine wisdom that guides all living things. When the full moon rises, it illuminates the ancestral paths and reminds us that we are all connected in the great circle of existence.",
+    name: "Auriga - The Charioteer",
+    story: "Auriga represents the charioteer who guides the celestial horses across the sky. The bright star Capella marks the charioteer's shoulder, shining with a golden light. In indigenous traditions, this constellation was often associated with the spirit guide who leads souls on their journey. The charioteer reminds us of the importance of guidance, direction, and helping others find their way.",
     artwork: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
       <path d="M50 25 Q30 35 25 50 Q30 65 50 75 Q70 65 75 50 Q70 35 50 25" stroke="#FFD700" stroke-width="2" fill="none"/>
       <circle cx="25" cy="50" r="3" fill="#FFD700"/>
@@ -218,18 +475,18 @@ const CONSTELLATIONS = [
       <path d="M35 40 Q50 30 65 40" stroke="#FFD700" stroke-width="1"/>
     </svg>`,
     stars: [
-      // Polaris, Kochab, Pherkad (Ursa Minor)
-      { ra: 2.530, dec: 89.26, name: "Polaris" },
-      { ra: 14.845, dec: 74.16, name: "Kochab" },
-      { ra: 15.346, dec: 71.83, name: "Pherkad" },
-      { ra: 17.537, dec: 86.59, name: "Yildun" }
+      // Auriga constellation
+      { ra: 5.278, dec: 45.99, name: "Capella", magnitude: 0.08 },
+      { ra: 5.992, dec: 43.82, name: "Menkalinan", magnitude: 1.90 },
+      { ra: 5.108, dec: 41.23, name: "Hassaleh", magnitude: 2.69 },
+      { ra: 5.032, dec: 37.21, name: "Mahasim", magnitude: 2.65 }
     ],
     lines: [[0, 1], [1, 2], [2, 3]]
   },
   {
     id: 6,
-    name: "The Seven Sisters",
-    story: "The Pleiades, known as the Seven Sisters, hold a special place in the stories of many indigenous peoples across North America. These stars represent seven sisters who fled from danger and were placed in the sky by the Creator. The Tonkawa and Comanche tell how the sisters watch over travelers and hunters, their light guiding the way through dark nights. When the Pleiades are visible, it marks important times for ceremonies and storytelling, reminding us that even in darkness, there is always light and guidance from those who came before us.",
+    name: "Canis Minor - The Little Dog",
+    story: "Canis Minor is the smaller hunting dog that accompanies Orion and Canis Major. The bright star Procyon marks the little dog's eye, shining with a steady light. In indigenous stories, this constellation represents the smaller but equally important companions who support the great hunters. The little dog teaches us that every member of the pack has value and contributes to the whole.",
     artwork: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
       <circle cx="35" cy="40" r="2" fill="#FFD700"/>
       <circle cx="45" cy="35" r="2" fill="#FFD700"/>
@@ -241,22 +498,16 @@ const CONSTELLATIONS = [
       <path d="M35 40 L55 40 M45 35 L50 45 M40 50 L60 50 M50 55 L50 35" stroke="#FFD700" stroke-width="1"/>
     </svg>`,
     stars: [
-      // Pleiades cluster
-      { ra: 3.763, dec: 24.12, name: "Alcyone" },
-      { ra: 3.773, dec: 24.14, name: "Atlas" },
-      { ra: 3.783, dec: 24.15, name: "Electra" },
-      { ra: 3.793, dec: 24.16, name: "Maia" },
-      { ra: 3.803, dec: 24.17, name: "Merope" },
-      { ra: 3.813, dec: 24.18, name: "Taygeta" },
-      { ra: 3.823, dec: 24.19, name: "Pleione" },
-      { ra: 3.833, dec: 24.20, name: "Celaeno" }
+      // Canis Minor constellation
+      { ra: 7.655, dec: 5.23, name: "Procyon", magnitude: 0.34 },
+      { ra: 7.453, dec: 8.29, name: "Gomeisa", magnitude: 2.89 }
     ],
-    lines: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7]]
+    lines: [[0, 1]]
   },
   {
     id: 7,
-    name: "The Hunter's Bow",
-    story: "The great hunter of the Comanche and Tonkawa peoples is represented by this constellation, showing his mighty bow drawn back, ready to release an arrow toward the buffalo herds. This constellation teaches about focus, patience, and the responsibility of the hunt. The hunter's bow reminds us that every action has consequences and that we must respect the balance of nature. When this constellation rises, hunters would prepare for the next day's work, asking for guidance and a successful hunt that would feed their families.",
+    name: "Perseus - The Hero",
+    story: "Perseus represents the great hero who saved the people from the sea monster. The constellation shows him holding the head of Medusa, with the bright star Mirfak marking his shoulder. In indigenous traditions, Perseus represents the protector who defends the community from danger. This constellation teaches us about courage, heroism, and the willingness to stand up for others.",
     artwork: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
       <path d="M20 50 Q30 45 40 50 Q50 55 60 50 Q70 45 80 50" stroke="#FFD700" stroke-width="2" fill="none"/>
       <circle cx="30" cy="50" r="2" fill="#FFD700"/>
@@ -265,11 +516,11 @@ const CONSTELLATIONS = [
       <path d="M25 45 L35 55 M45 47 L55 57 M65 43 L75 53" stroke="#FFD700" stroke-width="1"/>
     </svg>`,
     stars: [
-      // Arcturus, Spica, Regulus (Spring Triangle)
-      { ra: 14.261, dec: 19.18, name: "Arcturus" },
-      { ra: 13.420, dec: -11.16, name: "Spica" },
-      { ra: 10.139, dec: 11.97, name: "Regulus" },
-      { ra: 11.897, dec: 53.69, name: "Denebola" }
+      // Perseus constellation
+      { ra: 3.405, dec: 49.86, name: "Mirfak", magnitude: 1.79 },
+      { ra: 3.136, dec: 40.96, name: "Algol", magnitude: 2.12 },
+      { ra: 2.904, dec: 35.79, name: "Atik", magnitude: 2.87 },
+      { ra: 3.158, dec: 40.01, name: "Menkib", magnitude: 3.00 }
     ],
     lines: [[0, 1], [1, 2], [2, 3]]
   }

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Device Orientation Test - Stargazing App</title>
+   <style>
+       body { 
+           font-family: sans-serif; 
+           text-align: center; 
+           margin-top: 50px; 
+           background: linear-gradient(135deg, #0c1445, #1a2a6c, #b22c81);
+           color: white;
+           min-height: 100vh;
+       }
+       #permission-button { 
+           padding: 15px; 
+           font-size: 1.2em; 
+           cursor: pointer; 
+           background: #FFD700;
+           color: #0c1445;
+           border: none;
+           border-radius: 10px;
+           margin: 20px;
+       }
+       .data { 
+           margin-top: 20px; 
+           font-size: 1.5em; 
+           background: rgba(0, 0, 0, 0.7);
+           padding: 20px;
+           border-radius: 10px;
+           margin: 20px;
+       }
+       .status {
+           font-size: 1.2em;
+           font-weight: bold;
+           margin: 10px 0;
+       }
+       .skyward { color: #87CEEB; }
+       .ground { color: #8B4513; }
+       .horizon { color: #FFD700; }
+   </style>
+</head>
+<body>
+   <h1>🌟 Stargazing App Orientation Detector</h1>
+   <p>Based on research from findingStars.txt</p>
+   
+   <button id="permission-button">Enable Orientation Sensors</button>
+   
+   <div id="orientation-data" class="data" style="display:none;">
+       <h3>Device Orientation Data</h3>
+       <p>Alpha (Yaw/Heading): <span id="alpha"></span>°</p>
+       <p>Beta (Pitch): <span id="beta"></span>°</p>
+       <p>Gamma (Roll): <span id="gamma"></span>°</p>
+       
+       <div class="status" id="status"></div>
+       
+       <h3>Interpretation</h3>
+       <p id="interpretation"></p>
+       
+       <h3>Research-Based Logic</h3>
+       <p>• Beta 0° = Device flat (screen up)</p>
+       <p>• Beta 90° = Device vertical (pointing up)</p>
+       <p>• Beta 10-90° = Pointing at sky (stars visible)</p>
+       <p>• Beta > 90° = Pointing at ground</p>
+   </div>
+   
+   <script>
+       const permissionButton = document.getElementById('permission-button');
+       const orientationDataContainer = document.getElementById('orientation-data');
+       const alphaSpan = document.getElementById('alpha');
+       const betaSpan = document.getElementById('beta');
+       const gammaSpan = document.getElementById('gamma');
+       const statusSpan = document.getElementById('status');
+       const interpretationSpan = document.getElementById('interpretation');
+
+       function handleOrientation(event) {
+           const { alpha, beta, gamma } = event;
+
+           alphaSpan.textContent = alpha ? alpha.toFixed(2) : 'null';
+           betaSpan.textContent = beta ? beta.toFixed(2) : 'null';
+           gammaSpan.textContent = gamma ? gamma.toFixed(2) : 'null';
+
+           // Research-based logic for sky detection
+           let statusText = '';
+           let statusClass = '';
+           let interpretation = '';
+
+           if (beta === null || isNaN(beta)) {
+               statusText = "No orientation data";
+               statusClass = '';
+               interpretation = "Device orientation not available";
+           } else if (beta > 10 && beta < 90) {
+               statusText = "Pointing at the SKY ✨";
+               statusClass = 'skyward';
+               interpretation = "Perfect for stargazing! Stars should be visible.";
+           } else if (beta >= 90 && beta < 170) {
+               statusText = "Pointing at the GROUND 🌍";
+               statusClass = 'ground';
+               interpretation = "Point your device upward to see stars.";
+           } else if (beta >= -10 && beta <= 10) {
+               statusText = "Device FLAT 📱";
+               statusClass = 'horizon';
+               interpretation = "Tilt your device upward to see stars.";
+           } else {
+               statusText = "Pointing near HORIZON 🌅";
+               statusClass = 'horizon';
+               interpretation = "Tilt more upward to see stars clearly.";
+           }
+
+           statusSpan.textContent = statusText;
+           statusSpan.className = statusClass;
+           interpretationSpan.textContent = interpretation;
+       }
+
+       function requestPermission() {
+           // Check if the API exists and has the requestPermission method
+           if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+               DeviceOrientationEvent.requestPermission()
+                  .then(permissionState => {
+                       if (permissionState === 'granted') {
+                           startListening();
+                       } else {
+                           alert('Permission to access device orientation was denied.');
+                       }
+                   })
+                  .catch(console.error);
+           } else {
+               // Handle non-iOS 13+ devices
+               startListening();
+           }
+       }
+
+       function startListening() {
+           // Feature detect for the absolute event (preferred)
+           if ('ondeviceorientationabsolute' in window) {
+               window.addEventListener('deviceorientationabsolute', handleOrientation);
+               console.log('Using deviceorientationabsolute event');
+           } else if ('ondeviceorientation' in window) {
+               window.addEventListener('deviceorientation', handleOrientation);
+               console.log('Using deviceorientation event');
+           } else {
+               alert('Device orientation is not supported by your browser.');
+               return;
+           }
+           
+           permissionButton.style.display = 'none';
+           orientationDataContainer.style.display = 'block';
+       }
+
+       permissionButton.addEventListener('click', requestPermission);
+
+       // Hide button if the API doesn't require permission
+       if (!('DeviceOrientationEvent' in window && typeof DeviceOrientationEvent.requestPermission === 'function')) {
+           // Auto-start on platforms that don't require permission
+           setTimeout(() => {
+               if (orientationDataContainer.style.display === 'none') {
+                   startListening();
+               }
+           }, 1000);
+       }
+   </script>
+</body>
+</html>

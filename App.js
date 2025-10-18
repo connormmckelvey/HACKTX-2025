@@ -17,6 +17,7 @@ import { Svg, Line, Circle, Path } from 'react-native-svg';
 import * as Location from 'expo-location';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ARStarOverlay } from './src/components/ARStarOverlay';
+import { OrientationTest } from './src/components/OrientationTest';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -67,6 +68,7 @@ export default function App() {
   const [showModal, setShowModal] = useState(false);
   const [arMode, setArMode] = useState(true);
   const [cameraMode, setCameraMode] = useState(true);
+  const [testMode, setTestMode] = useState(false);
 
   // Animation refs
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -259,8 +261,13 @@ export default function App() {
     <LinearGradient colors={['#0c1445', '#1a2a6c', '#b22c81']} style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0c1445" />
 
+      {/* Orientation Test Mode */}
+      {testMode && currentScreen === 'starMap' && (
+        <OrientationTest location={location} />
+      )}
+
       {/* AR Star Overlay - Conditionally rendered to prevent issues */}
-      {currentScreen === 'starMap' && (
+      {!testMode && currentScreen === 'starMap' && (
         <ARStarOverlay location={location} cameraMode={arMode && cameraMode} showDaytimeOverlay={true} />
       )}
 
@@ -295,28 +302,38 @@ export default function App() {
 
       {/* Control Panel */}
       <View style={styles.controlPanel}>
-              <TouchableOpacity
+        <TouchableOpacity
           style={styles.controlButton}
-          onPress={() => {
-            setArMode(!arMode);
-            // When switching to AR mode, ensure camera is on by default
-            if (!arMode) {
-              setCameraMode(true);
-            }
-          }}
+          onPress={() => setTestMode(!testMode)}
         >
-          <Text style={styles.controlButtonIcon}>{arMode ? '🗺️' : '✨'}</Text>
-          <Text style={styles.controlButtonText}>{arMode ? 'Map' : 'AR'}</Text>
+          <Text style={styles.controlButtonIcon}>{testMode ? '🧪' : '🧪'}</Text>
+          <Text style={styles.controlButtonText}>{testMode ? 'Test' : 'Test'}</Text>
         </TouchableOpacity>
 
-        {arMode && (
+        {!testMode && (
+          <TouchableOpacity
+            style={styles.controlButton}
+            onPress={() => {
+              setArMode(!arMode);
+              // When switching to AR mode, ensure camera is on by default
+              if (!arMode) {
+                setCameraMode(true);
+              }
+            }}
+          >
+            <Text style={styles.controlButtonIcon}>{arMode ? '🗺️' : '✨'}</Text>
+            <Text style={styles.controlButtonText}>{arMode ? 'Map' : 'AR'}</Text>
+          </TouchableOpacity>
+        )}
+
+        {!testMode && arMode && (
           <TouchableOpacity
             style={styles.controlButton}
             onPress={() => setCameraMode(!cameraMode)}
           >
             <Text style={styles.controlButtonIcon}>{cameraMode ? '📷' : '🌌'}</Text>
             <Text style={styles.controlButtonText}>{cameraMode ? 'Camera' : 'Sky'}</Text>
-              </TouchableOpacity>
+          </TouchableOpacity>
         )}
       </View>
 

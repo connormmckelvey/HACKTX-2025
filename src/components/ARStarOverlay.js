@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, TouchableOpacity, Alert } from 'react-native';
 import { Camera, CameraView } from 'expo-camera';
 import Svg, { Line, Circle, Text as SvgText } from 'react-native-svg';
 import { useCompass } from '../hooks/useCompass';
@@ -7,11 +7,12 @@ import { AstronomyCalculator } from '../utils/astronomy';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-export const ARStarOverlay = ({ location, cameraMode = true }) => {
-  const { heading, isSupported } = useCompass();
+export const ARStarOverlay = ({ location, cameraMode = true, showDaytimeOverlay = true }) => {
+  const { heading, isSupported, isCalibrating, calibrateCompass } = useCompass();
   const [starPositions, setStarPositions] = useState([]);
   const [visibleStars, setVisibleStars] = useState([]);
   const [hasPermission, setHasPermission] = useState(null);
+  const [isDayTime, setIsDayTime] = useState(false);
 
   useEffect(() => {
     if (cameraMode) {
@@ -23,6 +24,12 @@ export const ARStarOverlay = ({ location, cameraMode = true }) => {
     if (location) {
       const positions = AstronomyCalculator.calculateStarPositions(location);
       setStarPositions(positions);
+
+      // Check if it's daytime (simple check based on current time)
+      const now = new Date();
+      const hour = now.getHours();
+      const isCurrentlyDay = hour > 6 && hour < 18; // Rough daytime check
+      setIsDayTime(isCurrentlyDay);
     }
   }, [location]);
 
@@ -30,7 +37,7 @@ export const ARStarOverlay = ({ location, cameraMode = true }) => {
     if (starPositions.length > 0) {
       // Use compass heading if available, otherwise use 0 (North)
       const currentHeading = isSupported ? heading : 0;
-      const visible = AstronomyCalculator.getVisibleStars(starPositions, currentHeading, 60);
+      const visible = AstronomyCalculator.getVisibleStars(starPositions, currentHeading, 90); // Wider FOV for better experience
       setVisibleStars(visible);
     }
   }, [heading, starPositions, isSupported]);
@@ -43,6 +50,17 @@ export const ARStarOverlay = ({ location, cameraMode = true }) => {
       console.error('Error requesting camera permission:', error);
       setHasPermission(false);
     }
+  };
+
+  const handleCalibrateCompass = () => {
+    Alert.alert(
+      "Compass Calibration",
+      "Point your device towards true north and keep it steady for 10 seconds.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Calibrate", onPress: calibrateCompass }
+      ]
+    );
   };
 
   // Convert azimuth/altitude to screen coordinates
@@ -58,6 +76,22 @@ export const ARStarOverlay = ({ location, cameraMode = true }) => {
     const y = ((90 - altitude) / 90) * screenHeight;
 
     return { x, y };
+  };
+
+  // Get opacity based on time of day and star visibility
+  const getStarOpacity = (star) => {
+    if (!isDayTime || !showDaytimeOverlay) return 0.9;
+
+    // During daytime, make stars more visible but slightly transparent
+    // You could also base this on the star's actual altitude
+    return 0.7;
+  };
+
+  const getLineOpacity = (star1, star2) => {
+    if (!isDayTime || !showDaytimeOverlay) return 0.8;
+
+    // Lines are slightly more transparent during day
+    return 0.6;
   };
 
   if (cameraMode && hasPermission === null) {
@@ -96,6 +130,18 @@ export const ARStarOverlay = ({ location, cameraMode = true }) => {
               {isSupported ? `${Math.round(heading)}°` : 'Web Mode'}
             </SvgText>
 
+            {/* Day/Night indicator */}
+            <SvgText
+              x={screenWidth / 2}
+              y={75}
+              textAnchor="middle"
+              fill={isDayTime ? "#FFA500" : "#FFD700"}
+              fontSize="14"
+              fontWeight="bold"
+            >
+              {isDayTime ? '☀️ Day Mode' : '🌙 Night Mode'}
+            </SvgText>
+
             {/* Star positions and connections */}
             {visibleStars.map((constellation) => (
               <View key={constellation.id}>
@@ -123,7 +169,7 @@ export const ARStarOverlay = ({ location, cameraMode = true }) => {
                         y2={endPos.y}
                         stroke="#FFD700"
                         strokeWidth="2"
-                        opacity={0.8}
+                        opacity={getLineOpacity(startStar, endStar)}
                       />
                     );
                   }
@@ -146,7 +192,7 @@ export const ARStarOverlay = ({ location, cameraMode = true }) => {
                         cy={pos.y}
                         r="8"
                         fill="#FFD700"
-                        opacity={0.9}
+                        opacity={getStarOpacity(star)}
                       />
                     );
                   })}
@@ -173,6 +219,7 @@ export const ARStarOverlay = ({ location, cameraMode = true }) => {
                     fill="#FFD700"
                     fontSize="12"
                     fontWeight="bold"
+                    opacity={isDayTime ? 0.8 : 1}
                   >
                     {constellation.name}
                   </SvgText>
@@ -194,6 +241,18 @@ export const ARStarOverlay = ({ location, cameraMode = true }) => {
             fontWeight="bold"
           >
             {isSupported ? `${Math.round(heading)}°` : 'Web Mode'}
+          </SvgText>
+
+          {/* Day/Night indicator */}
+          <SvgText
+            x={screenWidth / 2}
+            y={75}
+            textAnchor="middle"
+            fill={isDayTime ? "#FFA500" : "#FFD700"}
+            fontSize="14"
+            fontWeight="bold"
+          >
+            {isDayTime ? '☀️ Day Mode' : '🌙 Night Mode'}
           </SvgText>
 
           {/* Star positions and connections */}
@@ -223,7 +282,7 @@ export const ARStarOverlay = ({ location, cameraMode = true }) => {
                       y2={endPos.y}
                       stroke="#FFD700"
                       strokeWidth="2"
-                      opacity={0.8}
+                      opacity={getLineOpacity(startStar, endStar)}
                     />
                   );
                 }
@@ -246,7 +305,7 @@ export const ARStarOverlay = ({ location, cameraMode = true }) => {
                       cy={pos.y}
                       r="8"
                       fill="#FFD700"
-                      opacity={0.9}
+                      opacity={getStarOpacity(star)}
                     />
                   );
                 })}
@@ -273,6 +332,7 @@ export const ARStarOverlay = ({ location, cameraMode = true }) => {
                   fill="#FFD700"
                   fontSize="12"
                   fontWeight="bold"
+                  opacity={isDayTime ? 0.8 : 1}
                 >
                   {constellation.name}
                 </SvgText>
@@ -281,6 +341,19 @@ export const ARStarOverlay = ({ location, cameraMode = true }) => {
             return null;
           })}
         </Svg>
+      )}
+
+      {/* Calibration button */}
+      {isSupported && (
+        <TouchableOpacity
+          style={[styles.calibrationButton, isCalibrating && styles.calibratingButton]}
+          onPress={handleCalibrateCompass}
+          disabled={isCalibrating}
+        >
+          <Text style={styles.calibrationButtonText}>
+            {isCalibrating ? 'Calibrating...' : 'Calibrate Compass'}
+          </Text>
+        </TouchableOpacity>
       )}
 
       {/* Debug info */}
@@ -300,6 +373,11 @@ export const ARStarOverlay = ({ location, cameraMode = true }) => {
         <Text style={styles.debugText}>
           Mode: {cameraMode ? '📷 Camera' : '🌟 Map Only'}
         </Text>
+        {isDayTime && (
+          <Text style={[styles.debugText, { color: '#FFA500' }]}>
+            Daytime viewing enabled
+          </Text>
+        )}
       </View>
     </View>
   );
@@ -332,6 +410,24 @@ const styles = StyleSheet.create({
     color: '#FFD700',
     fontSize: 12,
     marginBottom: 2,
+  },
+  calibrationButton: {
+    position: 'absolute',
+    top: 20,
+    left: 20,
+    backgroundColor: 'rgba(255, 215, 0, 0.9)',
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 20,
+    zIndex: 10,
+  },
+  calibratingButton: {
+    backgroundColor: 'rgba(255, 165, 0, 0.9)',
+  },
+  calibrationButtonText: {
+    color: '#0c1445',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
   permissionText: {
     color: '#FFD700',

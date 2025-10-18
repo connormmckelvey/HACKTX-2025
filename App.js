@@ -315,7 +315,7 @@ export default function App() {
       <StatusBar barStyle="light-content" backgroundColor="#0c1445" />
 
       {/* AR Star Overlay */}
-      {arMode && <ARStarOverlay location={location} cameraMode={cameraMode} />}
+      {arMode && <ARStarOverlay location={location} cameraMode={cameraMode} showDaytimeOverlay={true} />}
 
       {/* Star Map Screen */}
       <View style={styles.starMapContainer} {...panResponder.current.panHandlers}>
@@ -391,22 +391,30 @@ export default function App() {
       {/* AR Mode Toggle Button */}
       <TouchableOpacity
         style={styles.arToggleButton}
-        onPress={() => setArMode(!arMode)}
+        onPress={() => {
+          setArMode(!arMode);
+          if (!arMode) {
+            setCameraMode(true); // Enable camera when entering AR mode
+          }
+        }}
       >
         <Text style={styles.arToggleText}>
           {arMode ? '🌟 Map' : '📱 AR'}
         </Text>
       </TouchableOpacity>
 
-      {/* Camera Mode Toggle Button */}
-      <TouchableOpacity
-        style={styles.cameraToggleButton}
-        onPress={() => setCameraMode(!cameraMode)}
-      >
-        <Text style={styles.cameraToggleText}>
-          {cameraMode ? '📱 Camera' : '🗺️ Map Only'}
-        </Text>
-      </TouchableOpacity>
+      {/* Camera Toggle Button */}
+      {arMode && (
+        <TouchableOpacity
+          style={styles.cameraToggleButton}
+          onPress={() => setCameraMode(!cameraMode)}
+        >
+          <Text style={styles.cameraToggleText}>
+            {cameraMode ? '📷 Camera' : '🌟 Overlay Only'}
+          </Text>
+        </TouchableOpacity>
+      )}
+
 
       {/* Constellation Details Modal */}
       <Modal visible={showModal} transparent animationType="none">

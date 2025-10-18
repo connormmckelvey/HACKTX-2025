@@ -8,17 +8,7 @@ import { AstronomyCalculator } from '../utils/astronomy';
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 export const ARStarOverlay = ({ location, cameraMode = true, showDaytimeOverlay = true }) => {
-  const { heading, isSupported, isCalibrating, calibrateCompass } = useCompass();
-
-  // Debug logging to troubleshoot the calibrateCompass issue
-  useEffect(() => {
-    console.log('useCompass hook result:', {
-      heading,
-      isSupported,
-      isCalibrating,
-      calibrateCompass: typeof calibrateCompass
-    });
-  }, [heading, isSupported, isCalibrating, calibrateCompass]);
+  const { heading, isSupported } = useCompass(location);
   const [starPositions, setStarPositions] = useState([]);
   const [visibleStars, setVisibleStars] = useState([]);
   const [hasPermission, setHasPermission] = useState(null);
@@ -62,25 +52,6 @@ export const ARStarOverlay = ({ location, cameraMode = true, showDaytimeOverlay 
     }
   };
 
-  const handleCalibrateCompass = () => {
-    if (typeof calibrateCompass === 'function') {
-      Alert.alert(
-        "Compass Calibration",
-        "Point your device towards true north and keep it steady for 10 seconds.",
-        [
-          { text: "Cancel", style: "cancel" },
-          { text: "Calibrate", onPress: calibrateCompass }
-        ]
-      );
-    } else {
-      Alert.alert(
-        "Calibration Unavailable",
-        "Compass calibration is not available on this device.",
-        [{ text: "OK" }]
-      );
-    }
-  };
-
   // Convert azimuth/altitude to screen coordinates
   const getScreenPosition = (azimuth, altitude) => {
     // Use compass heading if available, otherwise use 0 (North)
@@ -112,6 +83,122 @@ export const ARStarOverlay = ({ location, cameraMode = true, showDaytimeOverlay 
     return 0.6;
   };
 
+  const renderStarsAndLabels = () => {
+    return (
+      <Svg width={screenWidth} height={screenHeight} style={styles.svg}>
+        {/* Compass direction indicator */}
+        <SvgText
+          x={screenWidth / 2}
+          y={50}
+          textAnchor="middle"
+          fill="#FFD700"
+          fontSize="16"
+          fontWeight="bold"
+        >
+          {isSupported ? `${Math.round(heading)}°` : 'Web Mode'}
+        </SvgText>
+
+        {/* Day/Night indicator */}
+        <SvgText
+          x={screenWidth / 2}
+          y={75}
+          textAnchor="middle"
+          fill={isDayTime ? "#FFA500" : "#FFD700"}
+          fontSize="14"
+          fontWeight="bold"
+        >
+          {isDayTime ? '☀️ Day Mode' : '🌙 Night Mode'}
+        </SvgText>
+
+        {/* Star positions and connections */}
+        {visibleStars.map((constellation) => (
+          <View key={constellation.id}>
+            {/* Draw constellation lines */}
+            {constellation.lines.map((line, index) => {
+              const startStar = constellation.stars[line[0]];
+              const endStar = constellation.stars[line[1]];
+
+              if (startStar && endStar && startStar.visible && endStar.visible) {
+                const startPos = getScreenPosition(
+                  startStar.horizontalPosition.azimuth,
+                  startStar.horizontalPosition.altitude
+                );
+                const endPos = getScreenPosition(
+                  endStar.horizontalPosition.azimuth,
+                  endStar.horizontalPosition.altitude
+                );
+
+                return (
+                  <Line
+                    key={index}
+                    x1={startPos.x}
+                    y1={startPos.y}
+                    x2={endPos.x}
+                    y2={endPos.y}
+                    stroke="#FFD700"
+                    strokeWidth="2"
+                    opacity={getLineOpacity(startStar, endStar)}
+                  />
+                );
+              }
+              return null;
+            })}
+
+            {/* Draw constellation stars */}
+            {constellation.stars
+              .filter(star => star.visible)
+              .map((star, index) => {
+                const pos = getScreenPosition(
+                  star.horizontalPosition.azimuth,
+                  star.horizontalPosition.altitude
+                );
+
+                return (
+                  <Circle
+                    key={index}
+                    cx={pos.x}
+                    cy={pos.y}
+                    r="8"
+                    fill="#FFD700"
+                    opacity={getStarOpacity(star)}
+                  />
+                );
+              })}
+          </View>
+        ))}
+
+        {/* Constellation labels */}
+        {visibleStars.map((constellation) => {
+          // Use the position of the first visible star for the label
+          const visibleStarsInConstellation = constellation.stars.filter(star => star.visible);
+          if (visibleStarsInConstellation.length > 0) {
+            const referenceStar = visibleStarsInConstellation[0];
+            const pos = getScreenPosition(
+              referenceStar.horizontalPosition.azimuth,
+              referenceStar.horizontalPosition.altitude
+            );
+
+            return (
+              <SvgText
+                key={`label-${constellation.id}`}
+                x={pos.x}
+                y={pos.y - 20}
+                textAnchor="middle"
+                fill="#FFD700"
+                fontSize="12"
+                fontWeight="bold"
+                opacity={isDayTime ? 0.8 : 1}
+              >
+                {constellation.name}
+              </SvgText>
+            );
+          }
+          return null;
+        })}
+      </Svg>
+    );
+  };
+
   if (cameraMode && hasPermission === null) {
     return (
       <View style={styles.overlay}>
@@ -133,245 +220,15 @@ export const ARStarOverlay = ({ location, cameraMode = true, showDaytimeOverlay 
 
   return (
     <View style={styles.overlay}>
+      {/* Camera View or Static Background */}
       {cameraMode && hasPermission ? (
         <CameraView style={styles.camera} facing="back">
-          <Svg width={screenWidth} height={screenHeight} style={styles.svg}>
-            {/* Compass direction indicator */}
-            <SvgText
-              x={screenWidth / 2}
-              y={50}
-              textAnchor="middle"
-              fill="#FFD700"
-              fontSize="16"
-              fontWeight="bold"
-            >
-              {isSupported ? `${Math.round(heading)}°` : 'Web Mode'}
-            </SvgText>
-
-            {/* Day/Night indicator */}
-            <SvgText
-              x={screenWidth / 2}
-              y={75}
-              textAnchor="middle"
-              fill={isDayTime ? "#FFA500" : "#FFD700"}
-              fontSize="14"
-              fontWeight="bold"
-            >
-              {isDayTime ? '☀️ Day Mode' : '🌙 Night Mode'}
-            </SvgText>
-
-            {/* Star positions and connections */}
-            {visibleStars.map((constellation) => (
-              <View key={constellation.id}>
-                {/* Draw constellation lines */}
-                {constellation.lines.map((line, index) => {
-                  const startStar = constellation.stars[line[0]];
-                  const endStar = constellation.stars[line[1]];
-
-                  if (startStar && endStar && startStar.visible && endStar.visible) {
-                    const startPos = getScreenPosition(
-                      startStar.horizontalPosition.azimuth,
-                      startStar.horizontalPosition.altitude
-                    );
-                    const endPos = getScreenPosition(
-                      endStar.horizontalPosition.azimuth,
-                      endStar.horizontalPosition.altitude
-                    );
-
-                    return (
-                      <Line
-                        key={index}
-                        x1={startPos.x}
-                        y1={startPos.y}
-                        x2={endPos.x}
-                        y2={endPos.y}
-                        stroke="#FFD700"
-                        strokeWidth="2"
-                        opacity={getLineOpacity(startStar, endStar)}
-                      />
-                    );
-                  }
-                  return null;
-                })}
-
-                {/* Draw constellation stars */}
-                {constellation.stars
-                  .filter(star => star.visible)
-                  .map((star, index) => {
-                    const pos = getScreenPosition(
-                      star.horizontalPosition.azimuth,
-                      star.horizontalPosition.altitude
-                    );
-
-                    return (
-                      <Circle
-                        key={index}
-                        cx={pos.x}
-                        cy={pos.y}
-                        r="8"
-                        fill="#FFD700"
-                        opacity={getStarOpacity(star)}
-                      />
-                    );
-                  })}
-              </View>
-            ))}
-
-            {/* Constellation labels */}
-            {visibleStars.map((constellation) => {
-              // Use the position of the first visible star for the label
-              const visibleStarsInConstellation = constellation.stars.filter(star => star.visible);
-              if (visibleStarsInConstellation.length > 0) {
-                const referenceStar = visibleStarsInConstellation[0];
-                const pos = getScreenPosition(
-                  referenceStar.horizontalPosition.azimuth,
-                  referenceStar.horizontalPosition.altitude
-                );
-
-                return (
-                  <SvgText
-                    key={`label-${constellation.id}`}
-                    x={pos.x}
-                    y={pos.y - 20}
-                    textAnchor="middle"
-                    fill="#FFD700"
-                    fontSize="12"
-                    fontWeight="bold"
-                    opacity={isDayTime ? 0.8 : 1}
-                  >
-                    {constellation.name}
-                  </SvgText>
-                );
-              }
-              return null;
-            })}
-          </Svg>
+          {renderStarsAndLabels()}
         </CameraView>
       ) : (
-        <Svg width={screenWidth} height={screenHeight} style={styles.svg}>
-          {/* Compass direction indicator */}
-          <SvgText
-            x={screenWidth / 2}
-            y={50}
-            textAnchor="middle"
-            fill="#FFD700"
-            fontSize="16"
-            fontWeight="bold"
-          >
-            {isSupported ? `${Math.round(heading)}°` : 'Web Mode'}
-          </SvgText>
-
-          {/* Day/Night indicator */}
-          <SvgText
-            x={screenWidth / 2}
-            y={75}
-            textAnchor="middle"
-            fill={isDayTime ? "#FFA500" : "#FFD700"}
-            fontSize="14"
-            fontWeight="bold"
-          >
-            {isDayTime ? '☀️ Day Mode' : '🌙 Night Mode'}
-          </SvgText>
-
-          {/* Star positions and connections */}
-          {visibleStars.map((constellation) => (
-            <View key={constellation.id}>
-              {/* Draw constellation lines */}
-              {constellation.lines.map((line, index) => {
-                const startStar = constellation.stars[line[0]];
-                const endStar = constellation.stars[line[1]];
-
-                if (startStar && endStar && startStar.visible && endStar.visible) {
-                  const startPos = getScreenPosition(
-                    startStar.horizontalPosition.azimuth,
-                    startStar.horizontalPosition.altitude
-                  );
-                  const endPos = getScreenPosition(
-                    endStar.horizontalPosition.azimuth,
-                    endStar.horizontalPosition.altitude
-                  );
-
-                  return (
-                    <Line
-                      key={index}
-                      x1={startPos.x}
-                      y1={startPos.y}
-                      x2={endPos.x}
-                      y2={endPos.y}
-                      stroke="#FFD700"
-                      strokeWidth="2"
-                      opacity={getLineOpacity(startStar, endStar)}
-                    />
-                  );
-                }
-                return null;
-              })}
-
-              {/* Draw constellation stars */}
-              {constellation.stars
-                .filter(star => star.visible)
-                .map((star, index) => {
-                  const pos = getScreenPosition(
-                    star.horizontalPosition.azimuth,
-                    star.horizontalPosition.altitude
-                  );
-
-                  return (
-                    <Circle
-                      key={index}
-                      cx={pos.x}
-                      cy={pos.y}
-                      r="8"
-                      fill="#FFD700"
-                      opacity={getStarOpacity(star)}
-                    />
-                  );
-                })}
-            </View>
-          ))}
-
-          {/* Constellation labels */}
-          {visibleStars.map((constellation) => {
-            // Use the position of the first visible star for the label
-            const visibleStarsInConstellation = constellation.stars.filter(star => star.visible);
-            if (visibleStarsInConstellation.length > 0) {
-              const referenceStar = visibleStarsInConstellation[0];
-              const pos = getScreenPosition(
-                referenceStar.horizontalPosition.azimuth,
-                referenceStar.horizontalPosition.altitude
-              );
-
-              return (
-                <SvgText
-                  key={`label-${constellation.id}`}
-                  x={pos.x}
-                  y={pos.y - 20}
-                  textAnchor="middle"
-                  fill="#FFD700"
-                  fontSize="12"
-                  fontWeight="bold"
-                  opacity={isDayTime ? 0.8 : 1}
-                >
-                  {constellation.name}
-                </SvgText>
-              );
-            }
-            return null;
-          })}
-        </Svg>
-      )}
-
-      {/* Calibration button */}
-      {isSupported && typeof calibrateCompass === 'function' && (
-        <TouchableOpacity
-          style={[styles.calibrationButton, isCalibrating && styles.calibratingButton]}
-          onPress={handleCalibrateCompass}
-          disabled={isCalibrating}
-        >
-          <Text style={styles.calibrationButtonText}>
-            {isCalibrating ? 'Calibrating...' : 'Calibrate Compass'}
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.staticBackground}>
+          {renderStarsAndLabels()}
+        </View>
       )}
 
       {/* Debug info */}
@@ -380,7 +237,7 @@ export const ARStarOverlay = ({ location, cameraMode = true, showDaytimeOverlay 
           Heading: {isSupported ? `${Math.round(heading)}°` : 'Web Mode (0°)'}
         </Text>
         <Text style={styles.debugText}>
-          Compass: {isSupported ? '✅ Supported' : '❌ Web Only'}
+          Compass: {isSupported ? '✅ True North' : '❌ Inaccurate'}
         </Text>
         <Text style={styles.debugText}>
           Visible Stars: {visibleStars.length}
@@ -413,6 +270,10 @@ const styles = StyleSheet.create({
   camera: {
     flex: 1,
   },
+  staticBackground: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
   svg: {
     position: 'absolute',
   },
@@ -428,24 +289,6 @@ const styles = StyleSheet.create({
     color: '#FFD700',
     fontSize: 12,
     marginBottom: 2,
-  },
-  calibrationButton: {
-    position: 'absolute',
-    top: 20,
-    left: 20,
-    backgroundColor: 'rgba(255, 215, 0, 0.9)',
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    borderRadius: 20,
-    zIndex: 10,
-  },
-  calibratingButton: {
-    backgroundColor: 'rgba(255, 165, 0, 0.9)',
-  },
-  calibrationButtonText: {
-    color: '#0c1445',
-    fontSize: 14,
-    fontWeight: 'bold',
   },
   permissionText: {
     color: '#FFD700',

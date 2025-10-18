@@ -1,22 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { Magnetometer, Accelerometer } from 'expo-sensors';
 import { Platform } from 'react-native';
+import geomagnetism from 'geomagnetism';
 
-export const useCompass = () => {
+export const useCompass = (location) => {
   const [heading, setHeading] = useState(0);
   const [accuracy, setAccuracy] = useState(0);
   const [isSupported, setIsSupported] = useState(false);
-  const [isCalibrating, setIsCalibrating] = useState(false);
-
-  // Initialize calibrateCompass as a no-op function that will be replaced if sensors are available
-  const [calibrateCompass, setCalibrateCompass] = useState(() => () => {
-    console.warn('Compass calibration not available - sensors not initialized yet');
-  });
 
   // Sensor fusion variables
   const alpha = 0.8; // Low-pass filter coefficient
   const filteredHeading = useRef(0);
-  const headingOffset = useRef(0);
+  const headingOffset = useRef(0); // This will now store magnetic declination
   const calibrationSamples = useRef([]);
   const maxCalibrationSamples = 50;
 
@@ -66,14 +61,20 @@ export const useCompass = () => {
   };
 
   useEffect(() => {
+    // Update magnetic declination when location changes
+    if (location) {
+      const { latitude, longitude } = location.coords;
+      const geo = geomagnetism.model().point(latitude, longitude);
+      headingOffset.current = geo.decl; // Store declination in degrees
+    }
+  }, [location]);
+
+  useEffect(() => {
     // Check if we're on a native platform that supports sensors
     const platformSupported = Platform.OS !== 'web';
 
     if (!platformSupported) {
       setIsSupported(false);
-      setCalibrateCompass(() => () => {
-        console.warn('Compass calibration not available on this platform');
-      });
       return;
     }
 
@@ -128,34 +129,12 @@ export const useCompass = () => {
       // Apply low-pass filter for smoother readings
       const smoothedHeading = applyLowPassFilter(newHeading);
 
-      // Apply calibration offset if available
+      // Apply magnetic declination to get true north
       const finalHeading = (smoothedHeading + headingOffset.current) % 360;
 
       setHeading(finalHeading);
       setAccuracy(1); // High accuracy with sensor fusion
     };
-
-    // Calibration function
-    const calibrationFunction = () => {
-      setIsCalibrating(true);
-      calibrationSamples.current = [];
-
-      // Collect samples while user rotates device
-      const calibrationTimeout = setTimeout(() => {
-        if (calibrationSamples.current.length >= 10) {
-          // Calculate average offset from true north (assuming user pointed north)
-          const avgOffset = calibrationSamples.current.reduce((sum, sample) => sum + sample, 0) / calibrationSamples.current.length;
-          headingOffset.current = -avgOffset; // Correct for the offset
-          console.log('Compass calibrated with offset:', headingOffset.current);
-        }
-        setIsCalibrating(false);
-      }, 10000); // 10 second calibration period
-
-      return () => clearTimeout(calibrationTimeout);
-    };
-
-    // Set the calibration function once sensors are available
-    setCalibrateCompass(() => calibrationFunction);
 
     // Fallback function using DeviceMotion
     const fallbackToDeviceMotion = async () => {
@@ -174,7 +153,10 @@ export const useCompass = () => {
 
               // Apply low-pass filter even for fallback
               const smoothedHeading = applyLowPassFilter(heading);
-              setHeading(smoothedHeading);
+              
+              // Apply magnetic declination for fallback as well
+              const finalHeading = (smoothedHeading + headingOffset.current) % 360;
+              setHeading(finalHeading);
               setAccuracy(motionData.rotation.accuracy || 0.5); // Lower accuracy for fallback
             }
           });
@@ -209,7 +191,5 @@ export const useCompass = () => {
     heading,
     accuracy,
     isSupported,
-    isCalibrating,
-    calibrateCompass
   };
 };

@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { Svg, Line, Circle, Path } from 'react-native-svg';
 import * as Location from 'expo-location';
+import { LinearGradient } from 'expo-linear-gradient';
 import { ARStarOverlay } from './src/components/ARStarOverlay';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -116,6 +117,42 @@ const CONSTELLATIONS = [
     lines: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 0], [8, 9], [9, 10]]
   }
 ];
+
+// Animation for twinkling stars
+const TwinklingStar = ({ style }) => {
+  const twinkleAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const duration = Math.random() * 3000 + 2000;
+    const delay = Math.random() * 5000;
+
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(twinkleAnim, {
+          toValue: 1,
+          duration: duration / 2,
+          useNativeDriver: true,
+          delay,
+        }),
+        Animated.timing(twinkleAnim, {
+          toValue: 0,
+          duration: duration / 2,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    animation.start();
+    return () => animation.stop();
+  }, []);
+
+  const opacity = twinkleAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.5, 1],
+  });
+
+  return <Animated.View style={[style, { opacity }]} />;
+};
+
 
 export default function App() {
   const [location, setLocation] = useState(null);
@@ -230,13 +267,12 @@ export default function App() {
   // Generate random background stars
   const generateBackgroundStars = () => {
     const stars = [];
-    for (let i = 0; i < 120; i++) {
+    for (let i = 0; i < 150; i++) { // Increased star count
       stars.push({
         id: i,
         x: Math.random() * screenWidth,
-        y: Math.random() * screenHeight * 0.7, // Keep stars in upper portion
+        y: Math.random() * screenHeight,
         size: Math.random() * 2 + 1,
-        opacity: Math.random() * 0.6 + 0.4,
       });
     }
     return stars;
@@ -266,26 +302,29 @@ export default function App() {
 
   if (currentScreen === 'loading') {
     return (
-      <View style={styles.loadingContainer}>
+      <LinearGradient colors={['#0c1445', '#1a2a6c', '#b22c81']} style={styles.container}>
         <StatusBar barStyle="light-content" backgroundColor="#0c1445" />
-        <Animated.View
-          style={[
-            styles.starIcon,
-            {
-              transform: [{ scale: starAnim }],
-              opacity: fadeAnim,
-            },
-          ]}
-        >
-          <Text style={styles.starSymbol}>⭐</Text>
-        </Animated.View>
-        <ActivityIndicator size="large" color="#FFD700" style={styles.loader} />
-      </View>
+        <View style={styles.loadingContainer}>
+          <Animated.View
+            style={[
+              styles.starIcon,
+              {
+                transform: [{ scale: starAnim }],
+                opacity: fadeAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 1] }),
+              },
+            ]}
+          >
+            <Text style={styles.starSymbol}>✨</Text>
+          </Animated.View>
+          <Text style={styles.loadingText}>Discovering the cosmos...</Text>
+        </View>
+      </LinearGradient>
     );
   }
 
   if (currentScreen === 'welcome') {
     return (
+      <LinearGradient colors={['#0c1445', '#1a2a6c', '#b22c81']} style={styles.container}>
       <Animated.View
         style={[
           styles.welcomeContainer,
@@ -307,113 +346,118 @@ export default function App() {
           {'\n\n'}Welcome to their sky.
         </Text>
       </Animated.View>
+      </LinearGradient>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <LinearGradient colors={['#0c1445', '#1a2a6c', '#b22c81']} style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0c1445" />
 
-      {/* AR Star Overlay */}
-      {arMode && <ARStarOverlay location={location} cameraMode={cameraMode} showDaytimeOverlay={true} />}
+      {/* AR Star Overlay - Conditionally rendered to prevent issues */}
+      {currentScreen === 'starMap' && (
+        <ARStarOverlay location={location} cameraMode={arMode && cameraMode} showDaytimeOverlay={true} />
+      )}
 
-      {/* Star Map Screen */}
-      <View style={styles.starMapContainer} {...panResponder.current.panHandlers}>
-        {/* Background stars */}
-        {backgroundStars.map((star) => (
-          <View
-            key={star.id}
-            style={[
-              styles.backgroundStar,
-              {
-                left: star.x,
-                top: star.y,
-                width: star.size,
-                height: star.size,
-                opacity: star.opacity,
-              },
-            ]}
-          />
-        ))}
 
-        {/* Constellation stars and lines */}
-        {CONSTELLATIONS.map((constellation) => (
-          <View key={constellation.id}>
-            {/* Constellation lines */}
-            <Svg style={styles.constellationSvg}>
-              {constellation.lines.map((line, index) => {
-                const startStar = constellation.stars[line[0]];
-                const endStar = constellation.stars[line[1]];
-                return (
-                  <Line
-                    key={index}
-                    x1={startStar.x * 3}
-                    y1={startStar.y * 3}
-                    x2={endStar.x * 3}
-                    y2={endStar.y * 3}
-                    stroke="#FFD700"
-                    strokeWidth="2"
-                    opacity={0.8}
-                  />
-                );
-              })}
-            </Svg>
+      {/* Star Map Screen - only shown when not in camera ar mode */}
+      {(!arMode || !cameraMode) && (
+        <View style={styles.starMapContainer} {...panResponder.current.panHandlers}>
+          {/* Background stars */}
+          {backgroundStars.map((star) => (
+            <TwinklingStar
+              key={star.id}
+              style={[
+                styles.backgroundStar,
+                {
+                  left: star.x,
+                  top: star.y,
+                  width: star.size,
+                  height: star.size,
+                },
+              ]}
+            />
+          ))}
 
-            {/* Constellation stars */}
-            {constellation.stars.map((star, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[
-                  styles.constellationStar,
-                  {
-                    left: star.x * 3 - 8,
-                    top: star.y * 3 - 8,
-                  },
-                ]}
-                onPress={() => showConstellationDetails(constellation)}
-              >
-                <Animated.View
+          {/* Constellation stars and lines */}
+          {CONSTELLATIONS.map((constellation) => (
+            <View key={constellation.id}>
+              {/* Constellation lines */}
+              <Svg style={styles.constellationSvg}>
+                {constellation.lines.map((line, index) => {
+                  const startStar = constellation.stars[line[0]];
+                  const endStar = constellation.stars[line[1]];
+                  return (
+                    <Line
+                      key={index}
+                      x1={startStar.x * 3}
+                      y1={startStar.y * 3}
+                      x2={endStar.x * 3}
+                      y2={endStar.y * 3}
+                      stroke="#FFD700"
+                      strokeWidth="2"
+                      opacity={0.8}
+                    />
+                  );
+                })}
+              </Svg>
+
+              {/* Constellation stars */}
+              {constellation.stars.map((star, index) => (
+                <TouchableOpacity
+                  key={index}
                   style={[
-                    styles.starGlow,
+                    styles.constellationStar,
                     {
-                      transform: [{ scale: starAnim }],
+                      left: star.x * 3 - 8,
+                      top: star.y * 3 - 8,
                     },
                   ]}
+                  onPress={() => showConstellationDetails(constellation)}
                 >
-                  <Text style={styles.starSymbol}>⭐</Text>
-                </Animated.View>
-              </TouchableOpacity>
-            ))}
-          </View>
-        ))}
-      </View>
-
-      {/* AR Mode Toggle Button */}
-      <TouchableOpacity
-        style={styles.arToggleButton}
-        onPress={() => {
-          setArMode(!arMode);
-          if (!arMode) {
-            setCameraMode(true); // Enable camera when entering AR mode
-          }
-        }}
-      >
-        <Text style={styles.arToggleText}>
-          {arMode ? '🌟 Map' : '📱 AR'}
-        </Text>
-      </TouchableOpacity>
-
-      {/* Camera Toggle Button */}
-      {arMode && (
-        <TouchableOpacity
-          style={styles.cameraToggleButton}
-          onPress={() => setCameraMode(!cameraMode)}
-        >
-          <Text style={styles.cameraToggleText}>
-            {cameraMode ? '📷 Camera' : '🌟 Overlay Only'}
-          </Text>
-        </TouchableOpacity>
+                  <Animated.View
+                    style={[
+                      styles.starGlow,
+                      {
+                        transform: [{ scale: starAnim }],
+                      },
+                    ]}
+                  >
+                    <Text style={styles.starSymbol}>⭐</Text>
+                  </Animated.View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ))}
+        </View>
       )}
+
+      {/* Control Panel */}
+      <View style={styles.controlPanel}>
+        <TouchableOpacity
+          style={styles.controlButton}
+          onPress={() => {
+            setArMode(!arMode);
+            // When switching to AR mode, ensure camera is on by default
+            if (!arMode) {
+              setCameraMode(true);
+            }
+          }}
+        >
+          <Text style={styles.controlButtonIcon}>{arMode ? '🗺️' : '✨'}</Text>
+          <Text style={styles.controlButtonText}>{arMode ? 'Map' : 'AR'}</Text>
+        </TouchableOpacity>
+
+        {arMode && (
+          <TouchableOpacity
+            style={styles.controlButton}
+            onPress={() => setCameraMode(!cameraMode)}
+          >
+            <Text style={styles.controlButtonIcon}>{cameraMode ? '📷' : '🌌'}</Text>
+            <Text style={styles.controlButtonText}>{cameraMode ? 'Camera' : 'Sky'}</Text>
+          </TouchableOpacity>
+        )}
+      </View>
 
 
       {/* Constellation Details Modal */}
@@ -456,7 +500,7 @@ export default function App() {
           </Animated.View>
         </View>
       </Modal>
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -467,9 +511,14 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0c1445',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#FFD700',
+    fontFamily: Platform.OS === 'ios' ? 'Avenir Next' : 'Roboto',
   },
   starIcon: {
     marginBottom: 20,
@@ -483,7 +532,7 @@ const styles = StyleSheet.create({
   },
   welcomeContainer: {
     flex: 1,
-    backgroundColor: '#0c1445',
+    backgroundColor: 'transparent',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 40,
@@ -493,7 +542,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     textAlign: 'center',
     lineHeight: 28,
-    fontFamily: 'System',
+    fontFamily: Platform.OS === 'ios' ? 'Avenir Next' : 'Roboto',
   },
   starMapContainer: {
     flex: 1,
@@ -579,43 +628,40 @@ const styles = StyleSheet.create({
     color: '#FFD700',
     textAlign: 'center',
     marginBottom: 15,
-    fontFamily: 'System',
+    fontFamily: Platform.OS === 'ios' ? 'Avenir Next' : 'Roboto',
   },
   constellationStory: {
     fontSize: 16,
     color: '#FFFFFF',
     lineHeight: 24,
     textAlign: 'left',
-    fontFamily: 'System',
+    fontFamily: Platform.OS === 'ios' ? 'Avenir Next' : 'Roboto',
   },
-  arToggleButton: {
+  controlPanel: {
     position: 'absolute',
-    top: 150,
-    right: 20,
-    backgroundColor: 'rgba(255, 215, 0, 0.9)',
-    paddingHorizontal: 15,
+    bottom: 40,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    alignItems: 'center',
     paddingVertical: 10,
-    borderRadius: 20,
-    zIndex: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 30,
+    marginHorizontal: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.3)',
   },
-  arToggleText: {
-    color: '#0c1445',
-    fontSize: 14,
-    fontWeight: 'bold',
+  controlButton: {
+    alignItems: 'center',
   },
-  cameraToggleButton: {
-    position: 'absolute',
-    top: 200,
-    right: 20,
-    backgroundColor: 'rgba(255, 215, 0, 0.9)',
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    borderRadius: 20,
-    zIndex: 10,
+  controlButtonIcon: {
+    fontSize: 28,
   },
-  cameraToggleText: {
-    color: '#0c1445',
-    fontSize: 14,
-    fontWeight: 'bold',
+  controlButtonText: {
+    color: '#FFD700',
+    fontSize: 12,
+    marginTop: 4,
+    fontFamily: Platform.OS === 'ios' ? 'Avenir Next' : 'Roboto',
   },
 });

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Magnetometer, Accelerometer } from 'expo-sensors';
+import { Magnetometer, Accelerometer, Gyroscope } from 'expo-sensors';
 import { Platform } from 'react-native';
 import geomagnetism from 'geomagnetism';
 
@@ -9,11 +9,12 @@ export const useCompass = (location) => {
   const [isSupported, setIsSupported] = useState(false);
 
   // Sensor fusion variables
-  const alpha = 0.8; // Low-pass filter coefficient
+  const alpha = 0.8; // Low-pass filter coefficient for magnetometer
+  const gyroAlpha = 0.98; // High-pass filter coefficient for gyroscope
   const filteredHeading = useRef(0);
+  const gyroHeading = useRef(0);
+  const lastGyroUpdate = useRef(Date.now());
   const headingOffset = useRef(0); // This will now store magnetic declination
-  const calibrationSamples = useRef([]);
-  const maxCalibrationSamples = 50;
 
   // Improved heading calculation with sensor fusion
   const calculateHeading = (magnetometerData, accelerometerData) => {
@@ -100,39 +101,49 @@ export const useCompass = (location) => {
       return;
     }
 
-    let magnetometerSubscription, accelerometerSubscription;
+    let magnetometerSubscription, accelerometerSubscription, gyroscopeSubscription;
 
     // Check if sensors are available and start listening
     const initializeSensors = async () => {
       try {
-        // Check magnetometer availability
+        // Check sensor availability
         const magnetometerAvailable = await Magnetometer.isAvailableAsync();
         const accelerometerAvailable = await Accelerometer.isAvailableAsync();
+        const gyroscopeAvailable = await Gyroscope.isAvailableAsync();
 
-        setIsSupported(magnetometerAvailable && accelerometerAvailable);
+        setIsSupported(magnetometerAvailable && accelerometerAvailable && gyroscopeAvailable);
 
-        if (magnetometerAvailable && accelerometerAvailable) {
-          // Set update intervals for both sensors
-          Magnetometer.setUpdateInterval(50); // 20 FPS for better responsiveness
+        if (magnetometerAvailable && accelerometerAvailable && gyroscopeAvailable) {
+          // Set update intervals for all sensors (gyroscope needs higher frequency for smooth integration)
+          Magnetometer.setUpdateInterval(50); // 20 FPS
           Accelerometer.setUpdateInterval(50);
+          Gyroscope.setUpdateInterval(20); // 50 FPS for gyroscope integration
 
           let magnetometerData = null;
           let accelerometerData = null;
+          let gyroscopeData = null;
 
           // Magnetometer listener
           magnetometerSubscription = Magnetometer.addListener((data) => {
             magnetometerData = data;
-            processSensorData(magnetometerData, accelerometerData);
+            processSensorData(magnetometerData, accelerometerData, gyroscopeData);
           });
 
           // Accelerometer listener
           accelerometerSubscription = Accelerometer.addListener((data) => {
             accelerometerData = data;
-            processSensorData(magnetometerData, accelerometerData);
+            processSensorData(magnetometerData, accelerometerData, gyroscopeData);
           });
 
+          // Gyroscope listener
+          gyroscopeSubscription = Gyroscope.addListener((data) => {
+            gyroscopeData = data;
+            processSensorData(magnetometerData, accelerometerData, gyroscopeData);
+          });
+
+          console.log('All sensors initialized successfully');
         } else {
-          console.warn('Sensors not available, using fallback method');
+          console.warn('Not all sensors available, using fallback method');
           fallbackToDeviceMotion();
         }
       } catch (error) {
@@ -141,74 +152,114 @@ export const useCompass = (location) => {
       }
     };
 
-    // Process combined sensor data
-    const processSensorData = (magData, accData) => {
+    // Process combined sensor data with gyroscope integration
+    const processSensorData = (magData, accData, gyroData) => {
       if (!magData || !accData) return;
 
-      let newHeading = calculateHeading(magData, accData);
-      if (newHeading === null || isNaN(newHeading)) {
-        // If gimbal lock or other issue occurs, skip this update
-        return;
+      // Get absolute heading from magnetometer
+      let magHeading = calculateHeading(magData, accData);
+      if (magHeading === null || isNaN(magHeading)) {
+        return; // Skip if magnetometer data is invalid
       }
 
-      // Apply low-pass filter for smoother readings
-      const smoothedHeading = applyLowPassFilter(newHeading);
-
-      // Apply magnetic declination to get true north (with validation)
+      // Apply magnetic declination to get true north
       const declination = headingOffset.current;
-      const finalHeading = isNaN(declination) || !isFinite(declination)
-        ? smoothedHeading // Use raw heading if declination is invalid
-        : (smoothedHeading + declination) % 360;
+      const trueNorthHeading = isNaN(declination) || !isFinite(declination)
+        ? magHeading
+        : (magHeading + declination) % 360;
 
-      setHeading(finalHeading);
-      setAccuracy(1); // High accuracy with sensor fusion
+      // Update magnetometer-based heading (low-pass filtered)
+      const smoothedMagHeading = applyLowPassFilter(trueNorthHeading);
+
+      // Process gyroscope data for relative rotation
+      if (gyroData) {
+        const now = Date.now();
+        const deltaTime = (now - lastGyroUpdate.current) / 1000; // Convert to seconds
+        lastGyroUpdate.current = now;
+
+        // Gyroscope gives angular velocity in rad/s
+        // Integrate to get rotation change
+        const gyroRotation = gyroData.z * deltaTime * (180 / Math.PI); // Convert to degrees
+
+        // Update gyro-based heading (high-pass filtered for smooth relative tracking)
+        gyroHeading.current = (gyroHeading.current + gyroRotation) % 360;
+
+        // Combine magnetometer (absolute) and gyroscope (relative) using complementary filter
+        // This gives us the best of both: absolute reference + smooth tracking
+        const combinedHeading = (gyroAlpha * gyroHeading.current) + ((1 - gyroAlpha) * smoothedMagHeading);
+
+        setHeading(combinedHeading);
+        setAccuracy(1); // High accuracy with full sensor fusion
+      } else {
+        // Fallback to magnetometer-only if no gyroscope data
+        setHeading(smoothedMagHeading);
+        setAccuracy(0.8); // Slightly lower accuracy without gyroscope
+      }
     };
 
-    // Fallback function using DeviceMotion
+    // Fallback function using DeviceMotion (with gyroscope if available)
     const fallbackToDeviceMotion = async () => {
       try {
         const { DeviceMotion } = await import('expo-sensors');
-        const isAvailable = await DeviceMotion.isAvailableAsync();
+        const motionAvailable = await DeviceMotion.isAvailableAsync();
 
-        if (isAvailable) {
-          DeviceMotion.setUpdateInterval(100);
+        if (motionAvailable) {
+          DeviceMotion.setUpdateInterval(50); // Higher frequency for better tracking
 
           const subscription = DeviceMotion.addListener((motionData) => {
             if (motionData.rotation) {
               const rotation = motionData.rotation;
-              let heading = Math.atan2(rotation.gamma, rotation.beta) * (180 / Math.PI);
-              heading = (heading + 360) % 360;
 
-              if (isNaN(heading)) return; // Final safeguard for fallback
+              // Use the same calculation as gyroscope integration
+              const now = Date.now();
+              const deltaTime = (now - lastGyroUpdate.current) / 1000;
+              lastGyroUpdate.current = now;
 
-              // Apply low-pass filter even for fallback
-              const smoothedHeading = applyLowPassFilter(heading);
+              // DeviceMotion gives us rotation rate similar to gyroscope
+              const rotationRate = {
+                x: rotation.beta * (Math.PI / 180), // Convert to rad/s
+                y: rotation.gamma * (Math.PI / 180),
+                z: rotation.alpha * (Math.PI / 180)
+              };
 
-              // Apply magnetic declination for fallback as well (with validation)
-              const declination = headingOffset.current;
-              const finalHeading = isNaN(declination) || !isFinite(declination)
-                ? smoothedHeading // Use raw heading if declination is invalid
-                : (smoothedHeading + declination) % 360;
-              setHeading(finalHeading);
-              setAccuracy(motionData.rotation.accuracy || 0.5); // Lower accuracy for fallback
+              // Integrate rotation (simplified gyroscope integration)
+              const gyroRotation = rotationRate.z * deltaTime * (180 / Math.PI);
+              gyroHeading.current = (gyroHeading.current + gyroRotation) % 360;
+
+              // For absolute reference, use the magnetometer data if available in DeviceMotion
+              if (motionData.magneticField) {
+                // We have magnetic field data, use it for absolute reference
+                const { x, y, z } = motionData.magneticField;
+                const magHeading = Math.atan2(y, x) * (180 / Math.PI);
+                const normalizedMagHeading = (magHeading + 360) % 360;
+
+                // Apply declination
+                const declination = headingOffset.current;
+                const trueNorthHeading = isNaN(declination) || !isFinite(declination)
+                  ? normalizedMagHeading
+                  : (normalizedMagHeading + declination) % 360;
+
+                // Combine with gyro using complementary filter
+                const combinedHeading = (gyroAlpha * gyroHeading.current) + ((1 - gyroAlpha) * trueNorthHeading);
+
+                setHeading(combinedHeading);
+                setAccuracy(0.9); // Good accuracy with DeviceMotion
+              } else {
+                // No magnetic field data, use gyro only (will drift over time)
+                setHeading(gyroHeading.current);
+                setAccuracy(0.6); // Lower accuracy without magnetic reference
+              }
             }
           });
 
           magnetometerSubscription = subscription;
+          console.log('DeviceMotion fallback initialized');
         } else {
           setIsSupported(false);
-          // Set a no-op calibration function for unsupported platforms
-          setCalibrateCompass(() => () => {
-            console.warn('Compass calibration not available on this platform');
-          });
         }
       } catch (fallbackError) {
         console.warn('DeviceMotion fallback not available:', fallbackError);
         setIsSupported(false);
-        // Set a no-op calibration function for unsupported platforms
-        setCalibrateCompass(() => () => {
-          console.warn('Compass calibration not available on this platform');
-        });
       }
     };
 
@@ -217,6 +268,7 @@ export const useCompass = (location) => {
     return () => {
       if (magnetometerSubscription) magnetometerSubscription.remove();
       if (accelerometerSubscription) accelerometerSubscription.remove();
+      if (gyroscopeSubscription) gyroscopeSubscription.remove();
     };
   }, []);
 

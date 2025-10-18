@@ -7,6 +7,7 @@ export const useCompass = (location) => {
   const [heading, setHeading] = useState(0);
   const [accuracy, setAccuracy] = useState(0);
   const [isSupported, setIsSupported] = useState(false);
+  const [pitch, setPitch] = useState(0);
 
   // Sensor fusion variables
   const alpha = 0.8; // Low-pass filter coefficient for magnetometer
@@ -31,6 +32,12 @@ export const useCompass = (location) => {
     const ny = ay / norm;
     const nz = az / norm;
 
+    // Calculate pitch (angle from horizontal - positive when pointing up, negative when pointing down)
+    const currentPitch = Math.asin(-nx) * (180 / Math.PI); // Convert to degrees
+
+    // Update pitch state
+    setPitch(currentPitch);
+
     // Gimbal lock check: if the device is pointing straight up or down,
     // the heading is ambiguous.
     if (Math.abs(nx) > 0.99) {
@@ -39,15 +46,15 @@ export const useCompass = (location) => {
       return null;
     }
 
-    // Calculate pitch and roll for tilt compensation
-    const pitch = Math.asin(-nx);
-    const roll = Math.asin(ny / Math.cos(pitch));
+    // Calculate roll for tilt compensation
+    const roll = Math.asin(ny / Math.cos(currentPitch * Math.PI / 180));
 
-    // Apply tilt compensation to magnetometer data
-    const mx_comp = mx * Math.cos(pitch) + mz * Math.sin(pitch);
-    const my_comp = mx * Math.sin(roll) * Math.sin(pitch) +
+    // Apply tilt compensation to magnetometer data (convert pitch back to radians for trig functions)
+    const pitchRad = currentPitch * Math.PI / 180;
+    const mx_comp = mx * Math.cos(pitchRad) + mz * Math.sin(pitchRad);
+    const my_comp = mx * Math.sin(roll) * Math.sin(pitchRad) +
                    my * Math.cos(roll) -
-                   mz * Math.sin(roll) * Math.cos(pitch);
+                   mz * Math.sin(roll) * Math.cos(pitchRad);
 
     // Calculate heading from compensated magnetometer data
     let newHeading = Math.atan2(my_comp, mx_comp) * (180 / Math.PI);
@@ -276,5 +283,6 @@ export const useCompass = (location) => {
     heading,
     accuracy,
     isSupported,
+    pitch,
   };
 };

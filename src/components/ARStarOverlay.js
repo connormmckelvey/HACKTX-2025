@@ -8,11 +8,12 @@ import { AstronomyCalculator } from '../utils/astronomy';
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 export const ARStarOverlay = ({ location, cameraMode = true, showDaytimeOverlay = true }) => {
-  const { heading, isSupported } = useCompass(location);
+  const { heading, isSupported, pitch } = useCompass(location);
   const [starPositions, setStarPositions] = useState([]);
   const [visibleStars, setVisibleStars] = useState([]);
   const [hasPermission, setHasPermission] = useState(null);
   const [isDayTime, setIsDayTime] = useState(false);
+  const [isPointingSkyward, setIsPointingSkyward] = useState(false);
 
   useEffect(() => {
     if (cameraMode) {
@@ -32,6 +33,12 @@ export const ARStarOverlay = ({ location, cameraMode = true, showDaytimeOverlay 
       setIsDayTime(isCurrentlyDay);
     }
   }, [location]);
+
+  useEffect(() => {
+    // Update skyward pointing status based on device pitch
+    // Consider device pointing skyward when pitch > 10° (slight buffer for usability)
+    setIsPointingSkyward(pitch > 10);
+  }, [pitch]);
 
   useEffect(() => {
     if (starPositions.length > 0) {
@@ -85,6 +92,42 @@ export const ARStarOverlay = ({ location, cameraMode = true, showDaytimeOverlay 
   };
 
   const renderStarsAndLabels = () => {
+    // Only show stars if device is pointing skyward
+    if (!isPointingSkyward) {
+      return (
+        <View style={styles.centerContainer}>
+          <SvgText
+            x={screenWidth / 2}
+            y={screenHeight / 2 - 50}
+            textAnchor="middle"
+            fill="#FFD700"
+            fontSize="18"
+            fontWeight="bold"
+          >
+            📱 Point towards the sky
+          </SvgText>
+          <SvgText
+            x={screenWidth / 2}
+            y={screenHeight / 2 - 20}
+            textAnchor="middle"
+            fill="#FFD700"
+            fontSize="14"
+          >
+            to see the stars
+          </SvgText>
+          <SvgText
+            x={screenWidth / 2}
+            y={screenHeight / 2 + 20}
+            textAnchor="middle"
+            fill="#888"
+            fontSize="12"
+          >
+            Pitch: {Math.round(pitch)}°
+          </SvgText>
+        </View>
+      );
+    }
+
     return (
       <Svg width={screenWidth} height={screenHeight} style={styles.svg}>
         {/* Compass direction indicator */}
@@ -237,6 +280,9 @@ export const ARStarOverlay = ({ location, cameraMode = true, showDaytimeOverlay 
           Heading: {isSupported ? `${Math.round(heading)}°` : 'Web Mode (0°)'}
         </Text>
         <Text style={styles.debugText}>
+          Pitch: {Math.round(pitch)}° {isPointingSkyward ? '☁️ Skyward' : '🌍 Ground'}
+        </Text>
+        <Text style={styles.debugText}>
           Compass: {isSupported ? '✅ True North' : '❌ Inaccurate'}
         </Text>
         <Text style={styles.debugText}>
@@ -276,6 +322,15 @@ const styles = StyleSheet.create({
   },
   svg: {
     position: 'absolute',
+  },
+  centerContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   debugInfo: {
     position: 'absolute',

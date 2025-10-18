@@ -220,16 +220,15 @@ export const ARStarOverlay = ({ location, cameraMode = true, showDaytimeOverlay 
 
   return (
     <View style={styles.overlay}>
-      {/* Camera View or Static Background */}
-      {cameraMode && hasPermission ? (
-        <CameraView style={styles.camera} facing="back">
-          {renderStarsAndLabels()}
-        </CameraView>
-      ) : (
-        <View style={styles.staticBackground}>
-          {renderStarsAndLabels()}
-        </View>
+      {/* Camera View */}
+      {cameraMode && hasPermission && (
+        <CameraView style={StyleSheet.absoluteFill} facing="back" />
       )}
+
+      {/* Static Background or Star Overlay */}
+      <View style={cameraMode ? styles.arContainer : styles.staticBackground}>
+        {renderStarsAndLabels()}
+      </View>
 
       {/* Debug info */}
       <View style={styles.debugInfo}>
@@ -260,11 +259,11 @@ export const ARStarOverlay = ({ location, cameraMode = true, showDaytimeOverlay 
 
 const styles = StyleSheet.create({
   overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: screenWidth,
-    height: screenHeight,
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  arContainer: {
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: 'transparent',
   },
   camera: {

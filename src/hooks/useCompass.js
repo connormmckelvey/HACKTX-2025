@@ -131,8 +131,11 @@ export const useCompass = (location) => {
     const processSensorData = (magData, accData) => {
       if (!magData || !accData) return;
 
-      const newHeading = calculateHeading(magData, accData);
-      if (newHeading === null) return;
+      let newHeading = calculateHeading(magData, accData);
+      if (newHeading === null || isNaN(newHeading)) {
+        // If gimbal lock or other issue occurs, skip this update
+        return;
+      }
 
       // Apply low-pass filter for smoother readings
       const smoothedHeading = applyLowPassFilter(newHeading);
@@ -158,6 +161,8 @@ export const useCompass = (location) => {
               const rotation = motionData.rotation;
               let heading = Math.atan2(rotation.gamma, rotation.beta) * (180 / Math.PI);
               heading = (heading + 360) % 360;
+
+              if (isNaN(heading)) return; // Final safeguard for fallback
 
               // Apply low-pass filter even for fallback
               const smoothedHeading = applyLowPassFilter(heading);

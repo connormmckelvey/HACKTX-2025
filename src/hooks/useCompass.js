@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Magnetometer, Accelerometer, Gyroscope } from 'expo-sensors';
+import { Magnetometer, Accelerometer, Gyroscope, DeviceMotion } from 'expo-sensors';
 import { Platform } from 'react-native';
 import geomagnetism from 'geomagnetism';
 
@@ -16,6 +16,37 @@ export const useCompass = (location) => {
   const gyroHeading = useRef(0);
   const lastGyroUpdate = useRef(Date.now());
   const headingOffset = useRef(0); // This will now store magnetic declination
+  
+  // DeviceMotion-based orientation (more stable than raw accelerometer)
+  const [deviceOrientation, setDeviceOrientation] = useState({ pitch: 0, roll: 0, yaw: 0 });
+
+  // Process DeviceMotion data for stable orientation
+  const processDeviceMotion = (motionData) => {
+    if (!motionData.rotation) return;
+    
+    const { alpha, beta, gamma } = motionData.rotation;
+    
+    // Convert DeviceMotion rotation to pitch/roll/yaw
+    // DeviceMotion uses different conventions than raw accelerometer
+    // alpha = rotation around Z axis (yaw/heading)
+    // beta = rotation around X axis (pitch) 
+    // gamma = rotation around Y axis (roll)
+    
+    // For stargazing, we care about pitch (beta) - how much device is tilted up/down
+    // DeviceMotion beta: -180 to +180 degrees
+    // We want: pointing down = negative, pointing up = positive
+    const currentPitch = beta; // Direct use of DeviceMotion beta
+    
+    // Update pitch state
+    setPitch(currentPitch);
+    
+    // Update device orientation state
+    setDeviceOrientation({
+      pitch: beta,
+      roll: gamma, 
+      yaw: alpha
+    });
+  };
 
   // Improved heading calculation with sensor fusion
   const calculateHeading = (magnetometerData, accelerometerData) => {
@@ -32,12 +63,6 @@ export const useCompass = (location) => {
     const ny = ay / norm;
     const nz = az / norm;
 
-    // Calculate pitch (angle from horizontal - positive when pointing up, negative when pointing down)
-    const currentPitch = Math.asin(-nx) * (180 / Math.PI); // Convert to degrees
-
-    // Update pitch state
-    setPitch(currentPitch);
-
     // Gimbal lock check: if the device is pointing straight up or down,
     // the heading is ambiguous.
     if (Math.abs(nx) > 0.99) {
@@ -47,14 +72,14 @@ export const useCompass = (location) => {
     }
 
     // Calculate roll for tilt compensation
-    const roll = Math.asin(ny / Math.cos(currentPitch * Math.PI / 180));
+    const roll = Math.asin(ny / Math.cos(deviceOrientation.pitch * Math.PI / 180));
 
     // Apply tilt compensation to magnetometer data (convert pitch back to radians for trig functions)
-    const pitchRad = currentPitch * Math.PI / 180;
-    const mx_comp = mx * Math.cos(pitchRad) + mz * Math.sin(pitchRad);
-    const my_comp = mx * Math.sin(roll) * Math.sin(pitchRad) +
+    const pitchRadForTilt = deviceOrientation.pitch * Math.PI / 180;
+    const mx_comp = mx * Math.cos(pitchRadForTilt) + mz * Math.sin(pitchRadForTilt);
+    const my_comp = mx * Math.sin(roll) * Math.sin(pitchRadForTilt) +
                    my * Math.cos(roll) -
-                   mz * Math.sin(roll) * Math.cos(pitchRad);
+                   mz * Math.sin(roll) * Math.cos(pitchRadForTilt);
 
     // Calculate heading from compensated magnetometer data
     let newHeading = Math.atan2(my_comp, mx_comp) * (180 / Math.PI);
@@ -108,49 +133,45 @@ export const useCompass = (location) => {
       return;
     }
 
-    let magnetometerSubscription, accelerometerSubscription, gyroscopeSubscription;
+    let magnetometerSubscription, deviceMotionSubscription;
 
     // Check if sensors are available and start listening
     const initializeSensors = async () => {
       try {
-        // Check sensor availability
+        // Check sensor availability - prioritize DeviceMotion for stable orientation
         const magnetometerAvailable = await Magnetometer.isAvailableAsync();
-        const accelerometerAvailable = await Accelerometer.isAvailableAsync();
-        const gyroscopeAvailable = await Gyroscope.isAvailableAsync();
+        const deviceMotionAvailable = await DeviceMotion.isAvailableAsync();
 
-        setIsSupported(magnetometerAvailable && accelerometerAvailable && gyroscopeAvailable);
+        setIsSupported(magnetometerAvailable && deviceMotionAvailable);
 
-        if (magnetometerAvailable && accelerometerAvailable && gyroscopeAvailable) {
-          // Set update intervals for all sensors (gyroscope needs higher frequency for smooth integration)
+        if (magnetometerAvailable && deviceMotionAvailable) {
+          // Set update intervals
           Magnetometer.setUpdateInterval(50); // 20 FPS
-          Accelerometer.setUpdateInterval(50);
-          Gyroscope.setUpdateInterval(20); // 50 FPS for gyroscope integration
+          DeviceMotion.setUpdateInterval(50); // 20 FPS for stable orientation
 
           let magnetometerData = null;
-          let accelerometerData = null;
-          let gyroscopeData = null;
 
-          // Magnetometer listener
+          // DeviceMotion listener (primary source for orientation)
+          deviceMotionSubscription = DeviceMotion.addListener((data) => {
+            // Process orientation from DeviceMotion (more stable)
+            processDeviceMotion(data);
+            
+            // Process heading from magnetometer
+            if (data.magneticField) {
+              magnetometerData = data.magneticField;
+              processSensorData(magnetometerData, null, null);
+            }
+          });
+
+          // Magnetometer listener (backup for heading)
           magnetometerSubscription = Magnetometer.addListener((data) => {
             magnetometerData = data;
-            processSensorData(magnetometerData, accelerometerData, gyroscopeData);
+            processSensorData(magnetometerData, null, null);
           });
 
-          // Accelerometer listener
-          accelerometerSubscription = Accelerometer.addListener((data) => {
-            accelerometerData = data;
-            processSensorData(magnetometerData, accelerometerData, gyroscopeData);
-          });
-
-          // Gyroscope listener
-          gyroscopeSubscription = Gyroscope.addListener((data) => {
-            gyroscopeData = data;
-            processSensorData(magnetometerData, accelerometerData, gyroscopeData);
-          });
-
-          console.log('All sensors initialized successfully');
+          console.log('DeviceMotion and Magnetometer initialized successfully');
         } else {
-          console.warn('Not all sensors available, using fallback method');
+          console.warn('DeviceMotion not available, using fallback method');
           fallbackToDeviceMotion();
         }
       } catch (error) {
@@ -159,15 +180,19 @@ export const useCompass = (location) => {
       }
     };
 
-    // Process combined sensor data with gyroscope integration
+    // Process magnetometer data for heading calculation
     const processSensorData = (magData, accData, gyroData) => {
-      if (!magData || !accData) return;
+      if (!magData) return;
 
-      // Get absolute heading from magnetometer
-      let magHeading = calculateHeading(magData, accData);
-      if (magHeading === null || isNaN(magHeading)) {
-        return; // Skip if magnetometer data is invalid
-      }
+      // Get absolute heading from magnetometer (simplified without accelerometer tilt compensation)
+      // Since DeviceMotion handles orientation, we can use simpler magnetometer calculation
+      const { x: mx, y: my, z: mz } = magData;
+      
+      // Calculate heading from magnetometer data
+      let magHeading = Math.atan2(my, mx) * (180 / Math.PI);
+      
+      // Normalize to 0-360 degrees
+      magHeading = (magHeading + 360) % 360;
 
       // Apply magnetic declination to get true north
       const declination = headingOffset.current;
@@ -177,31 +202,9 @@ export const useCompass = (location) => {
 
       // Update magnetometer-based heading (low-pass filtered)
       const smoothedMagHeading = applyLowPassFilter(trueNorthHeading);
-
-      // Process gyroscope data for relative rotation
-      if (gyroData) {
-        const now = Date.now();
-        const deltaTime = (now - lastGyroUpdate.current) / 1000; // Convert to seconds
-        lastGyroUpdate.current = now;
-
-        // Gyroscope gives angular velocity in rad/s
-        // Integrate to get rotation change
-        const gyroRotation = gyroData.z * deltaTime * (180 / Math.PI); // Convert to degrees
-
-        // Update gyro-based heading (high-pass filtered for smooth relative tracking)
-        gyroHeading.current = (gyroHeading.current + gyroRotation) % 360;
-
-        // Combine magnetometer (absolute) and gyroscope (relative) using complementary filter
-        // This gives us the best of both: absolute reference + smooth tracking
-        const combinedHeading = (gyroAlpha * gyroHeading.current) + ((1 - gyroAlpha) * smoothedMagHeading);
-
-        setHeading(combinedHeading);
-        setAccuracy(1); // High accuracy with full sensor fusion
-      } else {
-        // Fallback to magnetometer-only if no gyroscope data
-        setHeading(smoothedMagHeading);
-        setAccuracy(0.8); // Slightly lower accuracy without gyroscope
-      }
+      
+      setHeading(smoothedMagHeading);
+      setAccuracy(0.9); // Good accuracy with DeviceMotion + Magnetometer
     };
 
     // Fallback function using DeviceMotion (with gyroscope if available)
@@ -274,8 +277,7 @@ export const useCompass = (location) => {
 
     return () => {
       if (magnetometerSubscription) magnetometerSubscription.remove();
-      if (accelerometerSubscription) accelerometerSubscription.remove();
-      if (gyroscopeSubscription) gyroscopeSubscription.remove();
+      if (deviceMotionSubscription) deviceMotionSubscription.remove();
     };
   }, []);
 

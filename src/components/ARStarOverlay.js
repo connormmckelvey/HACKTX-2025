@@ -36,8 +36,11 @@ export const ARStarOverlay = ({ location, cameraMode = true, showDaytimeOverlay 
 
   useEffect(() => {
     // Update skyward pointing status based on device pitch
-    // Consider device pointing skyward when pitch > 10° (slight buffer for usability)
-    setIsPointingSkyward(pitch > 10);
+    // DeviceMotion beta: -180 to +180 degrees
+    // Positive beta = pointing up (camera toward sky)
+    // Negative beta = pointing down (camera toward ground)
+    // Show stars when pointing upward (beta > 0°)
+    setIsPointingSkyward(pitch > 0);
   }, [pitch]);
 
   useEffect(() => {
@@ -122,7 +125,7 @@ export const ARStarOverlay = ({ location, cameraMode = true, showDaytimeOverlay 
             fill="#888"
             fontSize="12"
           >
-            Pitch: {Math.round(pitch)}°
+            Pitch: {Math.round(pitch)}° (DeviceMotion beta)
           </SvgText>
         </View>
       );
@@ -281,6 +284,7 @@ export const ARStarOverlay = ({ location, cameraMode = true, showDaytimeOverlay 
         </Text>
         <Text style={styles.debugText}>
           Pitch: {Math.round(pitch)}° {isPointingSkyward ? '☁️ Skyward' : '🌍 Ground'}
+          {pitch > 0 ? ' (Stars visible)' : ' (Point up to see stars)'}
         </Text>
         <Text style={styles.debugText}>
           Compass: {isSupported ? '✅ True North' : '❌ Inaccurate'}

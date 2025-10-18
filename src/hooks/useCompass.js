@@ -13,7 +13,29 @@ export const useCompass = () => {
   const filteredHeading = useRef(0);
   const headingOffset = useRef(0);
   const calibrationSamples = useRef([]);
+  const isCalibratingRef = useRef(false);
   const maxCalibrationSamples = 50;
+
+  // Calibration function (moved to hook scope so it's always available)
+  const calibrateCompass = () => {
+    setIsCalibrating(true);
+    calibrationSamples.current = [];
+    isCalibratingRef.current = true;
+
+    // Collect samples for a fixed period (10s) and compute offset
+    setTimeout(() => {
+      if (calibrationSamples.current.length >= 5) {
+        const avgOffset = calibrationSamples.current.reduce((sum, sample) => sum + sample, 0) / calibrationSamples.current.length;
+        headingOffset.current = -avgOffset;
+        console.log('Compass calibrated with offset:', headingOffset.current);
+      } else {
+        console.log('Not enough samples collected for calibration');
+      }
+
+      isCalibratingRef.current = false;
+      setIsCalibrating(false);
+    }, 10000); // 10 second calibration window
+  };
 
   // Improved heading calculation with sensor fusion
   const calculateHeading = (magnetometerData, accelerometerData) => {
@@ -119,6 +141,15 @@ export const useCompass = () => {
 
       // Apply low-pass filter for smoother readings
       const smoothedHeading = applyLowPassFilter(newHeading);
+
+      // If currently calibrating, collect samples
+      if (isCalibratingRef.current) {
+        calibrationSamples.current.push(smoothedHeading);
+        // limit samples
+        if (calibrationSamples.current.length > maxCalibrationSamples) {
+          calibrationSamples.current.shift();
+        }
+      }
 
       // Apply calibration offset if available
       const finalHeading = (smoothedHeading + headingOffset.current) % 360;

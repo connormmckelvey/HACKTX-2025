@@ -117,8 +117,33 @@ const CONSTELLATIONS = [
   }
 ];
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Onboarding } from './src/components/Onboarding';
+
 export default function App() {
   const [location, setLocation] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const raw = await AsyncStorage.getItem('@ancestral_skies_profile');
+        if (raw) setProfile(JSON.parse(raw));
+      } catch (e) {
+        console.error('Failed to load profile', e);
+      } finally {
+        setLoadingProfile(false);
+      }
+    };
+
+    loadProfile();
+  }, []);
+
+  const handleOnboardingComplete = (savedProfile) => {
+    setProfile(savedProfile);
+  };
+
   const [locationPermission, setLocationPermission] = useState(null);
   const [currentScreen, setCurrentScreen] = useState('loading');
   const [selectedConstellation, setSelectedConstellation] = useState(null);
@@ -263,6 +288,19 @@ export default function App() {
       </Svg>
     );
   };
+
+  if (loadingProfile) {
+    return (
+      <View style={styles.loadingContainer}>
+        <StatusBar barStyle="light-content" backgroundColor="#0c1445" />
+        <ActivityIndicator size="large" color="#FFD700" style={styles.loader} />
+      </View>
+    );
+  }
+
+  if (!profile) {
+    return <Onboarding onComplete={handleOnboardingComplete} />;
+  }
 
   if (currentScreen === 'loading') {
     return (

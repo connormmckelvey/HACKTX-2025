@@ -30,6 +30,14 @@ export const useCompass = (location) => {
     const ny = ay / norm;
     const nz = az / norm;
 
+    // Gimbal lock check: if the device is pointing straight up or down,
+    // the heading is ambiguous.
+    if (Math.abs(nx) > 0.99) {
+      // Avoid calculation that would result in NaN and return null.
+      // The calling function will skip this update.
+      return null;
+    }
+
     // Calculate pitch and roll for tilt compensation
     const pitch = Math.asin(-nx);
     const roll = Math.asin(ny / Math.cos(pitch));

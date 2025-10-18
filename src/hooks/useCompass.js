@@ -1,16 +1,25 @@
 import { useState, useEffect, useRef } from 'react';
-import { Magnetometer, Accelerometer } from 'expo-sensors';
+import { Magnetometer, DeviceMotion } from 'expo-sensors';
 import { Platform } from 'react-native';
+import geomagnetism from 'geomagnetism';
 
-export const useCompass = () => {
+export const useCompass = (location) => {
   const [heading, setHeading] = useState(0);
   const [accuracy, setAccuracy] = useState(0);
   const [isSupported, setIsSupported] = useState(false);
-  const [isCalibrating, setIsCalibrating] = useState(false);
+  const [pitch, setPitch] = useState(0);
+  const [roll, setRoll] = useState(0);
+  const [isPointingSkyward, setIsPointingSkyward] = useState(false);
+  const [orientationPermission, setOrientationPermission] = useState(null);
 
-  // Sensor fusion variables
-  const alpha = 0.8; // Low-pass filter coefficient
-  const filteredHeading = useRef(0);
+  // Heavy filtering for stability
+  const pitchHistory = useRef([]);
+  const rollHistory = useRef([]);
+  const headingHistory = useRef([]);
+  const HISTORY_LENGTH = 10; // Keep last 10 readings
+  const STABILITY_THRESHOLD = 5; // Degrees of change to consider stable
+  
+  // Magnetic declination
   const headingOffset = useRef(0);
   const calibrationSamples = useRef([]);
   const isCalibratingRef = useRef(false);
@@ -65,70 +74,209 @@ export const useCompass = () => {
     // Calculate heading from compensated magnetometer data
     let newHeading = Math.atan2(my_comp, mx_comp) * (180 / Math.PI);
 
-    // Normalize to 0-360 degrees
-    newHeading = (newHeading + 360) % 360;
-
-    return newHeading;
+  // Simple smoothing function
+  const smoothValue = (newValue, historyRef) => {
+    historyRef.current.push(newValue);
+    if (historyRef.current.length > HISTORY_LENGTH) {
+      historyRef.current.shift();
+    }
+    
+    // Calculate average of recent values
+    const sum = historyRef.current.reduce((a, b) => a + b, 0);
+    return sum / historyRef.current.length;
   };
 
-  // Low-pass filter for smoother readings
-  const applyLowPassFilter = (newHeading) => {
-    if (filteredHeading.current === 0) {
-      filteredHeading.current = newHeading;
-      return newHeading;
-    }
-
-    filteredHeading.current = alpha * filteredHeading.current + (1 - alpha) * newHeading;
-    return filteredHeading.current;
+  // Check if value is stable (not changing much)
+  const isStable = (historyRef) => {
+    if (historyRef.current.length < 3) return false;
+    
+    const recent = historyRef.current.slice(-3);
+    const max = Math.max(...recent);
+    const min = Math.min(...recent);
+    
+    return (max - min) < STABILITY_THRESHOLD;
   };
 
-  useEffect(() => {
-    // Check if we're on a native platform that supports sensors
-    const platformSupported = Platform.OS !== 'web';
-
-    if (!platformSupported) {
-      setIsSupported(false);
-      return;
+  // Process DeviceMotion data with heavy filtering
+  const processDeviceMotion = (motionData) => {
+    if (!motionData.rotation || !motionData.accelerationIncludingGravity) return;
+    
+    const { alpha, beta, gamma } = motionData.rotation;
+    const { x: gx, y: gy, z: gz } = motionData.accelerationIncludingGravity;
+    
+    // Use gravity vector for more stable pitch calculation
+    const gravityMagnitude = Math.sqrt(gx * gx + gy * gy + gz * gz);
+    if (gravityMagnitude < 0.1) return;
+    
+    // Normalize gravity vector
+    const ngx = gx / gravityMagnitude;
+    const ngy = gy / gravityMagnitude;
+    const ngz = gz / gravityMagnitude;
+    
+    // Calculate pitch from gravity vector (more stable)
+    const rawPitch = Math.asin(-ngz) * (180 / Math.PI);
+    const rawRoll = gamma;
+    
+    // Apply heavy smoothing
+    const smoothedPitch = smoothValue(rawPitch, pitchHistory);
+    const smoothedRoll = smoothValue(rawRoll, rollHistory);
+    
+    // Only update if values are stable
+    if (isStable(pitchHistory)) {
+      setPitch(smoothedPitch);
     }
+    
+    if (isStable(rollHistory)) {
+      setRoll(smoothedRoll);
+    }
+    
+    // Simple sky detection with buffer zones
+    // Based on user feedback: phone standing up is ~3°, so sky detection should be LESS than 8°
+    // 90° = pointing at ground, 3° = pointing at sky, <8° = pointing skyward (with buffer)
+    const skyThreshold = 8; // Degrees - if pitch is LESS than this, pointing skyward
+    const pointingSkyward = smoothedPitch < skyThreshold;
+    setIsPointingSkyward(pointingSkyward);
+    
+    // Process heading from magnetometer if available
+    if (motionData.magneticField) {
+      const { x: mx, y: my, z: mz } = motionData.magneticField;
+      
+      // Simple heading calculation
+      let magHeading = Math.atan2(my, mx) * (180 / Math.PI);
+      magHeading = (magHeading + 360) % 360;
+      
+      // Apply magnetic declination
+      const declination = headingOffset.current;
+      const trueNorthHeading = isNaN(declination) || !isFinite(declination)
+        ? magHeading
+        : (magHeading + declination) % 360;
+      
+      // Apply smoothing to heading
+      const smoothedHeading = smoothValue(trueNorthHeading, headingHistory);
+      
+      if (isStable(headingHistory)) {
+        setHeading(smoothedHeading);
+        setAccuracy(0.8); // Good accuracy with smoothing
+      }
+    }
+  };
 
-    let magnetometerSubscription, accelerometerSubscription;
+  // Process DeviceOrientationEvent data (Web API) with filtering
+  const processDeviceOrientation = (event) => {
+    const { alpha, beta, gamma } = event;
+    
+    if (beta === null || isNaN(beta)) return;
+    
+    // Apply heavy smoothing
+    const smoothedPitch = smoothValue(beta, pitchHistory);
+    const smoothedRoll = smoothValue(gamma, rollHistory);
+    
+    // Only update if values are stable
+    if (isStable(pitchHistory)) {
+      setPitch(smoothedPitch);
+    }
+    
+    if (isStable(rollHistory)) {
+      setRoll(smoothedRoll);
+    }
+    
+    // Simple sky detection
+    // Based on user feedback: phone standing up is ~3°, so sky detection should be LESS than 8°
+    // 90° = pointing at ground, 3° = pointing at sky, <8° = pointing skyward (with buffer)
+    const skyThreshold = 8; // Degrees - if pitch is LESS than this, pointing skyward
+    const pointingSkyward = smoothedPitch < skyThreshold;
+    setIsPointingSkyward(pointingSkyward);
+    
+    // Process heading
+    if (alpha !== null && !isNaN(alpha)) {
+      const declination = headingOffset.current;
+      const trueNorthHeading = isNaN(declination) || !isFinite(declination)
+        ? alpha
+        : (alpha + declination) % 360;
+      
+      const smoothedHeading = smoothValue(trueNorthHeading, headingHistory);
+      
+      if (isStable(headingHistory)) {
+        setHeading(smoothedHeading);
+        setAccuracy(0.8);
+      }
+    }
+  };
 
-    // Check if sensors are available and start listening
-    const initializeSensors = async () => {
-      try {
-        // Check magnetometer availability
-        const magnetometerAvailable = await Magnetometer.isAvailableAsync();
-        const accelerometerAvailable = await Accelerometer.isAvailableAsync();
-
-        setIsSupported(magnetometerAvailable && accelerometerAvailable);
-
-        if (magnetometerAvailable && accelerometerAvailable) {
-          // Set update intervals for both sensors
-          Magnetometer.setUpdateInterval(50); // 20 FPS for better responsiveness
-          Accelerometer.setUpdateInterval(50);
-
-          let magnetometerData = null;
-          let accelerometerData = null;
-
-          // Magnetometer listener
-          magnetometerSubscription = Magnetometer.addListener((data) => {
-            magnetometerData = data;
-            processSensorData(magnetometerData, accelerometerData);
-          });
-
-          // Accelerometer listener
-          accelerometerSubscription = Accelerometer.addListener((data) => {
-            accelerometerData = data;
-            processSensorData(magnetometerData, accelerometerData);
-          });
-
+  // Request permission for device orientation (iOS)
+  const requestOrientationPermission = async () => {
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && 'DeviceOrientationEvent' in window) {
+        if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+          try {
+            const permission = await DeviceOrientationEvent.requestPermission();
+            setOrientationPermission(permission);
+            return permission === 'granted';
+          } catch (error) {
+            console.error('Error requesting orientation permission:', error);
+            setOrientationPermission('denied');
+            return false;
+          }
         } else {
-          console.warn('Sensors not available, using fallback method');
-          fallbackToDeviceMotion();
+          setOrientationPermission('granted');
+          return true;
+        }
+      } else {
+        setOrientationPermission('denied');
+        return false;
+      }
+    }
+    
+    setOrientationPermission('granted');
+    return true;
+  };
+
+  // Initialize orientation detection
+  const initializeOrientation = async () => {
+    if (Platform.OS === 'web') {
+      const hasPermission = await requestOrientationPermission();
+      
+      if (hasPermission) {
+        if ('ondeviceorientationabsolute' in window) {
+          window.addEventListener('deviceorientationabsolute', processDeviceOrientation);
+          console.log('Using deviceorientationabsolute event with heavy filtering');
+        } else if ('ondeviceorientation' in window) {
+          window.addEventListener('deviceorientation', processDeviceOrientation);
+          console.log('Using deviceorientation event with heavy filtering');
+        } else {
+          console.warn('Device orientation not supported');
+          setIsSupported(false);
+          return;
+        }
+        
+        setIsSupported(true);
+        return () => {
+          window.removeEventListener('deviceorientationabsolute', processDeviceOrientation);
+          window.removeEventListener('deviceorientation', processDeviceOrientation);
+        };
+      } else {
+        setIsSupported(false);
+        return;
+      }
+    } else {
+      try {
+        const deviceMotionAvailable = await DeviceMotion.isAvailableAsync();
+        
+        if (deviceMotionAvailable) {
+          DeviceMotion.setUpdateInterval(100); // Slower updates for stability
+          
+          const subscription = DeviceMotion.addListener(processDeviceMotion);
+          setIsSupported(true);
+          
+          return () => subscription.remove();
+        } else {
+          setIsSupported(false);
+          return;
         }
       } catch (error) {
-        console.warn('Sensor initialization failed:', error);
-        fallbackToDeviceMotion();
+        console.error('Error initializing DeviceMotion:', error);
+        setIsSupported(false);
+        return;
       }
     };
 
@@ -177,43 +325,39 @@ export const useCompass = () => {
       return () => clearTimeout(calibrationTimeout);
     };
 
-    // Fallback function using DeviceMotion
-    const fallbackToDeviceMotion = async () => {
+  // Update magnetic declination when location changes
+  useEffect(() => {
+    if (location) {
       try {
-        const { DeviceMotion } = await import('expo-sensors');
-        const isAvailable = await DeviceMotion.isAvailableAsync();
+        const { latitude, longitude } = location.coords;
+        const geo = geomagnetism.model().point(latitude, longitude);
+        const declination = geo.decl;
 
-        if (isAvailable) {
-          DeviceMotion.setUpdateInterval(100);
-
-          const subscription = DeviceMotion.addListener((motionData) => {
-            if (motionData.rotation) {
-              const rotation = motionData.rotation;
-              let heading = Math.atan2(rotation.gamma, rotation.beta) * (180 / Math.PI);
-              heading = (heading + 360) % 360;
-
-              // Apply low-pass filter even for fallback
-              const smoothedHeading = applyLowPassFilter(heading);
-              setHeading(smoothedHeading);
-              setAccuracy(motionData.rotation.accuracy || 0.5); // Lower accuracy for fallback
-            }
-          });
-
-          magnetometerSubscription = subscription;
+        if (typeof declination === 'number' && !isNaN(declination) && isFinite(declination)) {
+          headingOffset.current = declination;
+          console.log('Updated magnetic declination:', declination);
         } else {
-          setIsSupported(false);
+          headingOffset.current = 0;
         }
-      } catch (fallbackError) {
-        console.warn('DeviceMotion fallback not available:', fallbackError);
-        setIsSupported(false);
+      } catch (error) {
+        console.error('Error calculating magnetic declination:', error);
+        headingOffset.current = 0;
       }
-    };
+    }
+  }, [location]);
 
-    initializeSensors();
+  // Initialize orientation detection
+  useEffect(() => {
+    let cleanup;
+    
+    const init = async () => {
+      cleanup = await initializeOrientation();
+    };
+    
+    init();
 
     return () => {
-      if (magnetometerSubscription) magnetometerSubscription.remove();
-      if (accelerometerSubscription) accelerometerSubscription.remove();
+      if (cleanup) cleanup();
     };
   }, []);
 
@@ -221,7 +365,10 @@ export const useCompass = () => {
     heading,
     accuracy,
     isSupported,
-    isCalibrating,
-    calibrateCompass
+    pitch,
+    roll,
+    isPointingSkyward,
+    orientationPermission,
+    requestOrientationPermission,
   };
 };

@@ -15,107 +15,50 @@ import {
 } from 'react-native';
 import { Svg, Line, Circle, Path } from 'react-native-svg';
 import * as Location from 'expo-location';
+import { LinearGradient } from 'expo-linear-gradient';
 import { ARStarOverlay } from './src/components/ARStarOverlay';
+import { OrientationTest } from './src/components/OrientationTest';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-// Culturally respectful constellation data for Central Texas Indigenous peoples
-const CONSTELLATIONS = [
-  {
-    id: 1,
-    name: "The Great Coyote",
-    story: "In the time before time, when the world was still forming, Great Coyote wandered the vast plains of Central Texas. He was the clever trickster who brought fire to the people and taught them to hunt wisely. The stars mark his path across the night sky as he chases the moon, forever reminding us of his cunning nature and the delicate balance between mischief and wisdom. The Tonkawa people tell how Coyote's howls can still be heard in the wind, guiding hunters and warning of danger.",
-    artwork: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      <path d="M20 30 Q30 25 40 30 Q50 35 60 30 Q70 25 80 30" stroke="#FFD700" stroke-width="2" fill="none"/>
-      <circle cx="20" cy="30" r="3" fill="#FFD700"/>
-      <circle cx="40" cy="30" r="3" fill="#FFD700"/>
-      <circle cx="60" cy="30" r="3" fill="#FFD700"/>
-      <circle cx="80" cy="30" r="3" fill="#FFD700"/>
-      <path d="M30 35 L35 45 M50 35 L55 45" stroke="#FFD700" stroke-width="1.5"/>
-    </svg>`,
-    stars: [
-      { x: 20, y: 30 }, { x: 40, y: 30 }, { x: 60, y: 30 }, { x: 80, y: 30 },
-      { x: 30, y: 35 }, { x: 35, y: 45 }, { x: 50, y: 35 }, { x: 55, y: 45 }
-    ],
-    lines: [[0, 1], [1, 2], [2, 3], [4, 5], [6, 7]]
-  },
-  {
-    id: 2,
-    name: "The Buffalo Spirit",
-    story: "The mighty buffalo once roamed freely across the Texas plains, providing sustenance and spiritual guidance to the Comanche people. This constellation shows Tatanka, the Buffalo Spirit, charging across the celestial plains. The Comanche believe that when buffalo appear in the night sky, it is a sign of abundance and that the herds will be plentiful. The constellation's path mirrors the ancient buffalo trails that crisscrossed the land, reminding us of the sacred connection between the people and these majestic creatures who gave their lives so that others might live.",
-    artwork: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      <path d="M15 40 Q25 35 35 40 Q45 45 55 40 Q65 35 75 40 L80 45 L75 55 L20 55 Z" stroke="#FFD700" stroke-width="2" fill="none"/>
-      <circle cx="25" cy="45" r="2" fill="#FFD700"/>
-      <circle cx="45" cy="50" r="2" fill="#FFD700"/>
-      <circle cx="65" cy="45" r="2" fill="#FFD700"/>
-      <path d="M70 35 L75 25 M75 35 L80 25" stroke="#FFD700" stroke-width="1.5"/>
-    </svg>`,
-    stars: [
-      { x: 15, y: 40 }, { x: 25, y: 35 }, { x: 35, y: 40 }, { x: 45, y: 45 },
-      { x: 55, y: 40 }, { x: 65, y: 35 }, { x: 75, y: 40 }, { x: 80, y: 45 },
-      { x: 75, y: 55 }, { x: 20, y: 55 }, { x: 70, y: 35 }, { x: 75, y: 25 },
-      { x: 80, y: 25 }
-    ],
-    lines: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 8], [8, 9], [10, 11], [11, 12]]
-  },
-  {
-    id: 3,
-    name: "The Eagle's Flight",
-    story: "Soaring high above the Edwards Plateau, the eagle was revered by both Tonkawa and Comanche peoples as a messenger between the earth and the spirit world. This constellation traces the eagle's powerful wings as it circles in the night sky, watching over the land and its people. The eagle teaches us about vision, courage, and the importance of seeing the bigger picture. When eagles appear in dreams or in the stars, they bring messages from ancestors and remind us to honor the sacred connection between all living things.",
-    artwork: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      <path d="M50 20 L30 40 L35 45 L45 35 L55 35 L65 45 L70 40 Z" stroke="#FFD700" stroke-width="2" fill="none"/>
-      <circle cx="30" cy="40" r="3" fill="#FFD700"/>
-      <circle cx="45" cy="35" r="3" fill="#FFD700"/>
-      <circle cx="55" cy="35" r="3" fill="#FFD700"/>
-      <circle cx="70" cy="40" r="3" fill="#FFD700"/>
-      <path d="M40 25 Q50 15 60 25" stroke="#FFD700" stroke-width="1.5"/>
-    </svg>`,
-    stars: [
-      { x: 50, y: 20 }, { x: 30, y: 40 }, { x: 35, y: 45 }, { x: 45, y: 35 },
-      { x: 55, y: 35 }, { x: 65, y: 45 }, { x: 70, y: 40 }, { x: 40, y: 25 },
-      { x: 50, y: 15 }, { x: 60, y: 25 }
-    ],
-    lines: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [7, 8], [8, 9]]
-  },
-  {
-    id: 4,
-    name: "The Deer Star",
-    story: "The white-tailed deer has always been a vital part of life in Central Texas, providing food, clothing, and tools for the indigenous peoples. This constellation shows the Deer Spirit leaping gracefully through the night sky, her path marking the changing seasons. The Tonkawa and Comanche peoples honored the deer for her gentleness and keen awareness, teaching lessons about living in harmony with nature. When this constellation is visible, it reminds hunters to approach their sacred duty with respect and gratitude for the life that will be given.",
-    artwork: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      <path d="M25 60 Q35 55 45 60 L50 50 L55 60 Q65 55 75 60 L80 65 L75 75 L25 75 Z" stroke="#FFD700" stroke-width="2" fill="none"/>
-      <circle cx="35" cy="60" r="2" fill="#FFD700"/>
-      <circle cx="50" cy="50" r="2" fill="#FFD700"/>
-      <circle cx="65" cy="60" r="2" fill="#FFD700"/>
-      <path d="M40 45 L50 35 L60 45" stroke="#FFD700" stroke-width="1.5"/>
-    </svg>`,
-    stars: [
-      { x: 25, y: 60 }, { x: 35, y: 55 }, { x: 45, y: 60 }, { x: 50, y: 50 },
-      { x: 55, y: 60 }, { x: 65, y: 55 }, { x: 75, y: 60 }, { x: 80, y: 65 },
-      { x: 75, y: 75 }, { x: 25, y: 75 }, { x: 40, y: 45 }, { x: 50, y: 35 },
-      { x: 60, y: 45 }
-    ],
-    lines: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 8], [8, 9], [10, 11], [11, 12]]
-  },
-  {
-    id: 5,
-    name: "The Moon's Path",
-    story: "The moon holds special significance in the spiritual life of the Tonkawa and Comanche peoples, marking time and guiding ceremonies. This constellation traces the Moon Spirit's journey across the night sky, weaving together stories of creation, renewal, and the cyclical nature of life. The moon teaches about patience, reflection, and the importance of honoring the feminine wisdom that guides all living things. When the full moon rises, it illuminates the ancestral paths and reminds us that we are all connected in the great circle of existence.",
-    artwork: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      <path d="M50 25 Q30 35 25 50 Q30 65 50 75 Q70 65 75 50 Q70 35 50 25" stroke="#FFD700" stroke-width="2" fill="none"/>
-      <circle cx="25" cy="50" r="3" fill="#FFD700"/>
-      <circle cx="50" cy="25" r="3" fill="#FFD700"/>
-      <circle cx="75" cy="50" r="3" fill="#FFD700"/>
-      <circle cx="50" cy="75" r="3" fill="#FFD700"/>
-      <path d="M35 40 Q50 30 65 40" stroke="#FFD700" stroke-width="1"/>
-    </svg>`,
-    stars: [
-      { x: 50, y: 25 }, { x: 30, y: 35 }, { x: 25, y: 50 }, { x: 30, y: 65 },
-      { x: 50, y: 75 }, { x: 70, y: 65 }, { x: 75, y: 50 }, { x: 70, y: 35 },
-      { x: 35, y: 40 }, { x: 50, y: 30 }, { x: 65, y: 40 }
-    ],
-    lines: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 0], [8, 9], [9, 10]]
-  }
-];
+// Import the real constellation data with astronomical coordinates
+import { AstronomyCalculator } from './src/utils/astronomy';
+
+// Animation for twinkling stars
+const TwinklingStar = ({ style }) => {
+  const twinkleAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const duration = Math.random() * 3000 + 2000;
+    const delay = Math.random() * 5000;
+
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(twinkleAnim, {
+          toValue: 1,
+          duration: duration / 2,
+          useNativeDriver: true,
+          delay,
+        }),
+        Animated.timing(twinkleAnim, {
+          toValue: 0,
+          duration: duration / 2,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    animation.start();
+    return () => animation.stop();
+  }, []);
+
+  const opacity = twinkleAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.5, 1],
+  });
+
+  return <Animated.View style={[style, { opacity }]} />;
+};
+
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Onboarding } from './src/components/Onboarding';
@@ -150,6 +93,7 @@ export default function App() {
   const [showModal, setShowModal] = useState(false);
   const [arMode, setArMode] = useState(true);
   const [cameraMode, setCameraMode] = useState(true);
+  const [testMode, setTestMode] = useState(false);
 
   // Animation refs
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -255,13 +199,12 @@ export default function App() {
   // Generate random background stars
   const generateBackgroundStars = () => {
     const stars = [];
-    for (let i = 0; i < 120; i++) {
+    for (let i = 0; i < 150; i++) { // Increased star count
       stars.push({
         id: i,
         x: Math.random() * screenWidth,
-        y: Math.random() * screenHeight * 0.7, // Keep stars in upper portion
+        y: Math.random() * screenHeight,
         size: Math.random() * 2 + 1,
-        opacity: Math.random() * 0.6 + 0.4,
       });
     }
     return stars;
@@ -304,26 +247,29 @@ export default function App() {
 
   if (currentScreen === 'loading') {
     return (
-      <View style={styles.loadingContainer}>
+      <LinearGradient colors={['#0c1445', '#1a2a6c', '#b22c81']} style={styles.container}>
         <StatusBar barStyle="light-content" backgroundColor="#0c1445" />
+        <View style={styles.loadingContainer}>
         <Animated.View
           style={[
             styles.starIcon,
             {
               transform: [{ scale: starAnim }],
-              opacity: fadeAnim,
+                opacity: fadeAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 1] }),
             },
           ]}
         >
-          <Text style={styles.starSymbol}>⭐</Text>
+            <Text style={styles.starSymbol}>✨</Text>
         </Animated.View>
-        <ActivityIndicator size="large" color="#FFD700" style={styles.loader} />
+          <Text style={styles.loadingText}>Discovering the cosmos...</Text>
       </View>
+      </LinearGradient>
     );
   }
 
   if (currentScreen === 'welcome') {
     return (
+      <LinearGradient colors={['#0c1445', '#1a2a6c', '#b22c81']} style={styles.container}>
       <Animated.View
         style={[
           styles.welcomeContainer,
@@ -345,21 +291,31 @@ export default function App() {
           {'\n\n'}Welcome to their sky.
         </Text>
       </Animated.View>
+      </LinearGradient>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <LinearGradient colors={['#0c1445', '#1a2a6c', '#b22c81']} style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0c1445" />
 
-      {/* AR Star Overlay */}
-      {arMode && <ARStarOverlay location={location} cameraMode={cameraMode} showDaytimeOverlay={true} />}
+      {/* Orientation Test Mode */}
+      {testMode && currentScreen === 'starMap' && (
+        <OrientationTest location={location} />
+      )}
 
-      {/* Star Map Screen */}
+      {/* AR Star Overlay - Conditionally rendered to prevent issues */}
+      {!testMode && currentScreen === 'starMap' && (
+        <ARStarOverlay location={location} cameraMode={arMode && cameraMode} showDaytimeOverlay={true} />
+      )}
+
+
+      {/* Star Map Screen - only shown when not in camera ar mode */}
+      {(!arMode || !cameraMode) && (
       <View style={styles.starMapContainer} {...panResponder.current.panHandlers}>
         {/* Background stars */}
         {backgroundStars.map((star) => (
-          <View
+            <TwinklingStar
             key={star.id}
             style={[
               styles.backgroundStar,
@@ -368,90 +324,56 @@ export default function App() {
                 top: star.y,
                 width: star.size,
                 height: star.size,
-                opacity: star.opacity,
               },
             ]}
           />
         ))}
 
-        {/* Constellation stars and lines */}
-        {CONSTELLATIONS.map((constellation) => (
-          <View key={constellation.id}>
-            {/* Constellation lines */}
-            <Svg style={styles.constellationSvg}>
-              {constellation.lines.map((line, index) => {
-                const startStar = constellation.stars[line[0]];
-                const endStar = constellation.stars[line[1]];
-                return (
-                  <Line
-                    key={index}
-                    x1={startStar.x * 3}
-                    y1={startStar.y * 3}
-                    x2={endStar.x * 3}
-                    y2={endStar.y * 3}
-                    stroke="#FFD700"
-                    strokeWidth="2"
-                    opacity={0.8}
-                  />
-                );
-              })}
-            </Svg>
-
-            {/* Constellation stars */}
-            {constellation.stars.map((star, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[
-                  styles.constellationStar,
-                  {
-                    left: star.x * 3 - 8,
-                    top: star.y * 3 - 8,
-                  },
-                ]}
-                onPress={() => showConstellationDetails(constellation)}
-              >
-                <Animated.View
-                  style={[
-                    styles.starGlow,
-                    {
-                      transform: [{ scale: starAnim }],
-                    },
-                  ]}
-                >
-                  <Text style={styles.starSymbol}>⭐</Text>
-                </Animated.View>
-              </TouchableOpacity>
-            ))}
+          {/* Show a message that AR mode has better constellation viewing */}
+          <View style={styles.starMapMessage}>
+            <Text style={styles.starMapMessageText}>
+              Switch to AR mode for interactive constellations
+            </Text>
           </View>
-        ))}
-      </View>
-
-      {/* AR Mode Toggle Button */}
-      <TouchableOpacity
-        style={styles.arToggleButton}
-        onPress={() => {
-          setArMode(!arMode);
-          if (!arMode) {
-            setCameraMode(true); // Enable camera when entering AR mode
-          }
-        }}
-      >
-        <Text style={styles.arToggleText}>
-          {arMode ? '🌟 Map' : '📱 AR'}
-        </Text>
-      </TouchableOpacity>
-
-      {/* Camera Toggle Button */}
-      {arMode && (
-        <TouchableOpacity
-          style={styles.cameraToggleButton}
-          onPress={() => setCameraMode(!cameraMode)}
-        >
-          <Text style={styles.cameraToggleText}>
-            {cameraMode ? '📷 Camera' : '🌟 Overlay Only'}
-          </Text>
-        </TouchableOpacity>
+        </View>
       )}
+
+      {/* Control Panel */}
+      <View style={styles.controlPanel}>
+        <TouchableOpacity
+          style={styles.controlButton}
+          onPress={() => setTestMode(!testMode)}
+        >
+          <Text style={styles.controlButtonIcon}>{testMode ? '🧪' : '🧪'}</Text>
+          <Text style={styles.controlButtonText}>{testMode ? 'Test' : 'Test'}</Text>
+        </TouchableOpacity>
+
+        {!testMode && (
+          <TouchableOpacity
+            style={styles.controlButton}
+            onPress={() => {
+              setArMode(!arMode);
+              // When switching to AR mode, ensure camera is on by default
+              if (!arMode) {
+                setCameraMode(true);
+              }
+            }}
+          >
+            <Text style={styles.controlButtonIcon}>{arMode ? '🗺️' : '✨'}</Text>
+            <Text style={styles.controlButtonText}>{arMode ? 'Map' : 'AR'}</Text>
+          </TouchableOpacity>
+        )}
+
+        {!testMode && arMode && (
+          <TouchableOpacity
+            style={styles.controlButton}
+            onPress={() => setCameraMode(!cameraMode)}
+          >
+            <Text style={styles.controlButtonIcon}>{cameraMode ? '📷' : '🌌'}</Text>
+            <Text style={styles.controlButtonText}>{cameraMode ? 'Camera' : 'Sky'}</Text>
+          </TouchableOpacity>
+        )}
+      </View>
 
 
       {/* Constellation Details Modal */}
@@ -494,7 +416,7 @@ export default function App() {
           </Animated.View>
         </View>
       </Modal>
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -505,9 +427,14 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0c1445',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#FFD700',
+    fontFamily: Platform.OS === 'ios' ? 'Avenir Next' : 'Roboto',
   },
   starIcon: {
     marginBottom: 20,
@@ -521,7 +448,7 @@ const styles = StyleSheet.create({
   },
   welcomeContainer: {
     flex: 1,
-    backgroundColor: '#0c1445',
+    backgroundColor: 'transparent',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 40,
@@ -531,7 +458,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     textAlign: 'center',
     lineHeight: 28,
-    fontFamily: 'System',
+    fontFamily: Platform.OS === 'ios' ? 'Avenir Next' : 'Roboto',
   },
   starMapContainer: {
     flex: 1,
@@ -617,43 +544,58 @@ const styles = StyleSheet.create({
     color: '#FFD700',
     textAlign: 'center',
     marginBottom: 15,
-    fontFamily: 'System',
+    fontFamily: Platform.OS === 'ios' ? 'Avenir Next' : 'Roboto',
   },
   constellationStory: {
     fontSize: 16,
     color: '#FFFFFF',
     lineHeight: 24,
     textAlign: 'left',
-    fontFamily: 'System',
+    fontFamily: Platform.OS === 'ios' ? 'Avenir Next' : 'Roboto',
   },
-  arToggleButton: {
+  controlPanel: {
     position: 'absolute',
-    top: 150,
-    right: 20,
-    backgroundColor: 'rgba(255, 215, 0, 0.9)',
-    paddingHorizontal: 15,
+    bottom: 40,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    alignItems: 'center',
+    paddingVertical: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 30,
+    marginHorizontal: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.3)',
+  },
+  controlButton: {
+    alignItems: 'center',
+  },
+  controlButtonIcon: {
+    fontSize: 28,
+  },
+  controlButtonText: {
+    color: '#FFD700',
+    fontSize: 12,
+    marginTop: 4,
+    fontFamily: Platform.OS === 'ios' ? 'Avenir Next' : 'Roboto',
+  },
+  starMapMessage: {
+    position: 'absolute',
+    top: '50%',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  starMapMessageText: {
+    color: '#FFD700',
+    fontSize: 16,
+    textAlign: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 20,
-    zIndex: 10,
-  },
-  arToggleText: {
-    color: '#0c1445',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  cameraToggleButton: {
-    position: 'absolute',
-    top: 200,
-    right: 20,
-    backgroundColor: 'rgba(255, 215, 0, 0.9)',
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    borderRadius: 20,
-    zIndex: 10,
-  },
-  cameraToggleText: {
-    color: '#0c1445',
-    fontSize: 14,
-    fontWeight: 'bold',
+    fontFamily: Platform.OS === 'ios' ? 'Avenir Next' : 'Roboto',
   },
 });

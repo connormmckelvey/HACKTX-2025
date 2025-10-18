@@ -71,9 +71,23 @@ export const useCompass = (location) => {
   useEffect(() => {
     // Update magnetic declination when location changes
     if (location) {
-      const { latitude, longitude } = location.coords;
-      const geo = geomagnetism.model().point(latitude, longitude);
-      headingOffset.current = geo.decl; // Store declination in degrees
+      try {
+        const { latitude, longitude } = location.coords;
+        const geo = geomagnetism.model().point(latitude, longitude);
+        const declination = geo.decl;
+
+        // Validate that declination is a valid number
+        if (typeof declination === 'number' && !isNaN(declination) && isFinite(declination)) {
+          headingOffset.current = declination; // Store declination in degrees
+          console.log('Updated magnetic declination:', declination);
+        } else {
+          console.warn('Invalid declination value:', declination, 'using fallback of 0');
+          headingOffset.current = 0; // Fallback to no declination correction
+        }
+      } catch (error) {
+        console.error('Error calculating magnetic declination:', error);
+        headingOffset.current = 0; // Fallback to no declination correction
+      }
     }
   }, [location]);
 
@@ -140,8 +154,11 @@ export const useCompass = (location) => {
       // Apply low-pass filter for smoother readings
       const smoothedHeading = applyLowPassFilter(newHeading);
 
-      // Apply magnetic declination to get true north
-      const finalHeading = (smoothedHeading + headingOffset.current) % 360;
+      // Apply magnetic declination to get true north (with validation)
+      const declination = headingOffset.current;
+      const finalHeading = isNaN(declination) || !isFinite(declination)
+        ? smoothedHeading // Use raw heading if declination is invalid
+        : (smoothedHeading + declination) % 360;
 
       setHeading(finalHeading);
       setAccuracy(1); // High accuracy with sensor fusion
@@ -166,9 +183,12 @@ export const useCompass = (location) => {
 
               // Apply low-pass filter even for fallback
               const smoothedHeading = applyLowPassFilter(heading);
-              
-              // Apply magnetic declination for fallback as well
-              const finalHeading = (smoothedHeading + headingOffset.current) % 360;
+
+              // Apply magnetic declination for fallback as well (with validation)
+              const declination = headingOffset.current;
+              const finalHeading = isNaN(declination) || !isFinite(declination)
+                ? smoothedHeading // Use raw heading if declination is invalid
+                : (smoothedHeading + declination) % 360;
               setHeading(finalHeading);
               setAccuracy(motionData.rotation.accuracy || 0.5); // Lower accuracy for fallback
             }

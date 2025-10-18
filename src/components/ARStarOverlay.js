@@ -37,7 +37,8 @@ export const ARStarOverlay = ({ location, cameraMode = true, showDaytimeOverlay 
     if (starPositions.length > 0) {
       // Use compass heading if available, otherwise use 0 (North)
       const currentHeading = isSupported ? heading : 0;
-      const visible = AstronomyCalculator.getVisibleStars(starPositions, currentHeading, 90); // Wider FOV for better experience
+      // Reduced FOV for more realistic stargazing experience and less jitter
+      const visible = AstronomyCalculator.getVisibleStars(starPositions, currentHeading, 25);
       setVisibleStars(visible);
     }
   }, [heading, starPositions, isSupported]);

@@ -18,6 +18,8 @@ import * as Location from 'expo-location';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ARStarOverlay } from './src/components/ARStarOverlay';
 import { OrientationTest } from './src/components/OrientationTest';
+import { PhotoCapture } from './src/components/PhotoCapture';
+import { PhotoGallery } from './src/components/PhotoGallery';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -60,32 +62,13 @@ const TwinklingStar = ({ style }) => {
 };
 
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { Onboarding } from './src/components/Onboarding';
 
-export default function App() {
+// Main app content component
+function AppContent() {
+  const { user, profile, loading } = useAuth();
   const [location, setLocation] = useState(null);
-  const [profile, setProfile] = useState(null);
-  const [loadingProfile, setLoadingProfile] = useState(true);
-
-  useEffect(() => {
-    const loadProfile = async () => {
-      try {
-        const raw = await AsyncStorage.getItem('@ancestral_skies_profile');
-        if (raw) setProfile(JSON.parse(raw));
-      } catch (e) {
-        console.error('Failed to load profile', e);
-      } finally {
-        setLoadingProfile(false);
-      }
-    };
-
-    loadProfile();
-  }, []);
-
-  const handleOnboardingComplete = (savedProfile) => {
-    setProfile(savedProfile);
-  };
 
   const [locationPermission, setLocationPermission] = useState(null);
   const [currentScreen, setCurrentScreen] = useState('loading');
@@ -94,6 +77,10 @@ export default function App() {
   const [arMode, setArMode] = useState(true);
   const [cameraMode, setCameraMode] = useState(true);
   const [testMode, setTestMode] = useState(false);
+  const [showPhotoCapture, setShowPhotoCapture] = useState(false);
+  const [showPhotoGallery, setShowPhotoGallery] = useState(false);
+  const [selectedConstellationForPhoto, setSelectedConstellationForPhoto] = useState(null);
+  const [activeTab, setActiveTab] = useState('home');
 
   // Animation refs
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -212,6 +199,65 @@ export default function App() {
 
   const backgroundStars = generateBackgroundStars();
 
+  // Render tab content based on active tab
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'home':
+        return (
+          <View style={styles.tabContent}>
+            <Text style={styles.tabTitle}>Home</Text>
+            <Text style={styles.tabDescription}>
+              Welcome to Ancestral Skies! Explore the constellations and capture your own photos of the night sky.
+            </Text>
+            {/* Show a message that AR mode has better constellation viewing */}
+            <View style={styles.starMapMessage}>
+              <Text style={styles.starMapMessageText}>
+                Switch to AR mode for interactive constellations
+              </Text>
+            </View>
+          </View>
+        );
+      case 'map':
+        return (
+          <View style={styles.tabContent}>
+            <Text style={styles.tabTitle}>Star Map</Text>
+            <Text style={styles.tabDescription}>
+              Interactive star map coming soon. For now, use AR mode for the best constellation viewing experience.
+            </Text>
+          </View>
+        );
+      case 'gallery':
+        return (
+          <View style={styles.tabContent}>
+            <Text style={styles.tabTitle}>Gallery</Text>
+            <Text style={styles.tabDescription}>
+              Your captured constellation photos will appear here.
+            </Text>
+            <TouchableOpacity 
+              style={styles.galleryButton}
+              onPress={() => setShowPhotoGallery(true)}
+            >
+              <Text style={styles.galleryButtonText}>View Photos</Text>
+            </TouchableOpacity>
+          </View>
+        );
+      case 'profile':
+        return (
+          <View style={styles.tabContent}>
+            <Text style={styles.tabTitle}>Profile</Text>
+            <Text style={styles.tabDescription}>
+              User profile and settings coming soon.
+            </Text>
+            <Text style={styles.profileInfo}>
+              Welcome, {profile?.username || 'User'}!
+            </Text>
+          </View>
+        );
+      default:
+        return null;
+    }
+  };
+
   // Simple SVG renderer for constellation artwork
   const renderConstellationArtwork = (artworkSvg) => {
     // For this prototype, we'll use a simplified approach
@@ -232,7 +278,7 @@ export default function App() {
     );
   };
 
-  if (loadingProfile) {
+  if (loading) {
     return (
       <View style={styles.loadingContainer}>
         <StatusBar barStyle="light-content" backgroundColor="#0c1445" />
@@ -241,8 +287,24 @@ export default function App() {
     );
   }
 
-  if (!profile) {
-    return <Onboarding onComplete={handleOnboardingComplete} />;
+  if (!user) {
+    return <Onboarding />;
+  }
+
+  // If user exists but profile is still loading, show loading screen
+  if (user && !profile && loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <StatusBar barStyle="light-content" backgroundColor="#0c1445" />
+        <ActivityIndicator size="large" color="#FFD700" style={styles.loader} />
+        <Text style={styles.loadingText}>Setting up your profile...</Text>
+      </View>
+    );
+  }
+
+  // If user exists but no profile after loading is complete, show onboarding
+  if (user && !profile && !loading) {
+    return <Onboarding />;
   }
 
   if (currentScreen === 'loading') {
@@ -310,8 +372,7 @@ export default function App() {
       )}
 
 
-      {/* Star Map Screen - only shown when not in camera ar mode */}
-      {(!arMode || !cameraMode) && (
+      {/* Background stars for all screens */}
       <View style={styles.starMapContainer} {...panResponder.current.panHandlers}>
         {/* Background stars */}
         {backgroundStars.map((star) => (
@@ -328,51 +389,57 @@ export default function App() {
             ]}
           />
         ))}
+      </View>
 
-          {/* Show a message that AR mode has better constellation viewing */}
-          <View style={styles.starMapMessage}>
-            <Text style={styles.starMapMessageText}>
-              Switch to AR mode for interactive constellations
-            </Text>
-          </View>
+      {/* Tab Content */}
+      {renderTabContent()}
+
+      {/* Snapchat-style Capture Button */}
+      <TouchableOpacity
+        style={styles.snapchatCaptureButton}
+        onPress={() => {
+          setSelectedConstellationForPhoto(selectedConstellation);
+          setShowPhotoCapture(true);
+        }}
+      >
+        <View style={styles.captureButtonOuter}>
+          <View style={styles.captureButtonInner} />
         </View>
-      )}
+      </TouchableOpacity>
 
-      {/* Control Panel */}
-      <View style={styles.controlPanel}>
+      {/* Bottom Tab Navigation */}
+      <View style={styles.bottomTabBar}>
         <TouchableOpacity
-          style={styles.controlButton}
-          onPress={() => setTestMode(!testMode)}
+          style={[styles.tabButton, activeTab === 'home' && styles.activeTabButton]}
+          onPress={() => setActiveTab('home')}
         >
-          <Text style={styles.controlButtonIcon}>{testMode ? '🧪' : '🧪'}</Text>
-          <Text style={styles.controlButtonText}>{testMode ? 'Test' : 'Test'}</Text>
+          <Text style={[styles.tabIcon, activeTab === 'home' && styles.activeTabIcon]}>🏠</Text>
+          <Text style={[styles.tabLabel, activeTab === 'home' && styles.activeTabLabel]}>Home</Text>
         </TouchableOpacity>
 
-        {!testMode && (
-          <TouchableOpacity
-            style={styles.controlButton}
-            onPress={() => {
-              setArMode(!arMode);
-              // When switching to AR mode, ensure camera is on by default
-              if (!arMode) {
-                setCameraMode(true);
-              }
-            }}
-          >
-            <Text style={styles.controlButtonIcon}>{arMode ? '🗺️' : '✨'}</Text>
-            <Text style={styles.controlButtonText}>{arMode ? 'Map' : 'AR'}</Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity
+          style={[styles.tabButton, activeTab === 'map' && styles.activeTabButton]}
+          onPress={() => setActiveTab('map')}
+        >
+          <Text style={[styles.tabIcon, activeTab === 'map' && styles.activeTabIcon]}>🗺️</Text>
+          <Text style={[styles.tabLabel, activeTab === 'map' && styles.activeTabLabel]}>Map</Text>
+        </TouchableOpacity>
 
-        {!testMode && arMode && (
-          <TouchableOpacity
-            style={styles.controlButton}
-            onPress={() => setCameraMode(!cameraMode)}
-          >
-            <Text style={styles.controlButtonIcon}>{cameraMode ? '📷' : '🌌'}</Text>
-            <Text style={styles.controlButtonText}>{cameraMode ? 'Camera' : 'Sky'}</Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity
+          style={[styles.tabButton, activeTab === 'gallery' && styles.activeTabButton]}
+          onPress={() => setActiveTab('gallery')}
+        >
+          <Text style={[styles.tabIcon, activeTab === 'gallery' && styles.activeTabIcon]}>🖼️</Text>
+          <Text style={[styles.tabLabel, activeTab === 'gallery' && styles.activeTabLabel]}>Gallery</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.tabButton, activeTab === 'profile' && styles.activeTabButton]}
+          onPress={() => setActiveTab('profile')}
+        >
+          <Text style={[styles.tabIcon, activeTab === 'profile' && styles.activeTabIcon]}>👤</Text>
+          <Text style={[styles.tabLabel, activeTab === 'profile' && styles.activeTabLabel]}>Profile</Text>
+        </TouchableOpacity>
       </View>
 
 
@@ -416,6 +483,20 @@ export default function App() {
           </Animated.View>
         </View>
       </Modal>
+
+      {/* Photo Capture Modal */}
+      <PhotoCapture
+        visible={showPhotoCapture}
+        onClose={() => setShowPhotoCapture(false)}
+        constellation={selectedConstellationForPhoto}
+        location={location}
+      />
+
+      {/* Photo Gallery Modal */}
+      <PhotoGallery
+        visible={showPhotoGallery}
+        onClose={() => setShowPhotoGallery(false)}
+      />
     </LinearGradient>
   );
 }
@@ -553,32 +634,116 @@ const styles = StyleSheet.create({
     textAlign: 'left',
     fontFamily: Platform.OS === 'ios' ? 'Avenir Next' : 'Roboto',
   },
-  controlPanel: {
+  // Tab Content Styles
+  tabContent: {
+    flex: 1,
+    padding: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  tabTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#FFD700',
+    marginBottom: 15,
+    fontFamily: Platform.OS === 'ios' ? 'Avenir Next' : 'Roboto',
+  },
+  tabDescription: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 20,
+    fontFamily: Platform.OS === 'ios' ? 'Avenir Next' : 'Roboto',
+  },
+  galleryButton: {
+    backgroundColor: '#FFD700',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  galleryButtonText: {
+    color: '#0c1445',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  profileInfo: {
+    fontSize: 18,
+    color: '#FFD700',
+    marginTop: 10,
+    fontFamily: Platform.OS === 'ios' ? 'Avenir Next' : 'Roboto',
+  },
+  
+  // Snapchat-style Capture Button
+  snapchatCaptureButton: {
     position: 'absolute',
-    bottom: 40,
+    bottom: 100,
+    left: '50%',
+    marginLeft: -35,
+    zIndex: 10,
+  },
+  captureButtonOuter: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  captureButtonInner: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#fff',
+  },
+  
+  // Bottom Tab Navigation
+  bottomTabBar: {
+    position: 'absolute',
+    bottom: 0,
     left: 0,
     right: 0,
     flexDirection: 'row',
-    justifyContent: 'space-evenly',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    paddingTop: 10,
+    paddingBottom: Platform.OS === 'ios' ? 30 : 10,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 215, 0, 0.3)',
+  },
+  tabButton: {
+    flex: 1,
     alignItems: 'center',
-    paddingVertical: 10,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    borderRadius: 30,
-    marginHorizontal: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 215, 0, 0.3)',
+    paddingVertical: 8,
   },
-  controlButton: {
-    alignItems: 'center',
+  activeTabButton: {
+    backgroundColor: 'rgba(255, 215, 0, 0.1)',
   },
-  controlButtonIcon: {
-    fontSize: 28,
+  tabIcon: {
+    fontSize: 24,
+    marginBottom: 4,
   },
-  controlButtonText: {
-    color: '#FFD700',
+  activeTabIcon: {
+    fontSize: 26,
+  },
+  tabLabel: {
+    color: '#FFFFFF',
     fontSize: 12,
-    marginTop: 4,
     fontFamily: Platform.OS === 'ios' ? 'Avenir Next' : 'Roboto',
+  },
+  activeTabLabel: {
+    color: '#FFD700',
+    fontWeight: 'bold',
   },
   starMapMessage: {
     position: 'absolute',
@@ -599,3 +764,12 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === 'ios' ? 'Avenir Next' : 'Roboto',
   },
 });
+
+// Main App component with AuthProvider
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
+}

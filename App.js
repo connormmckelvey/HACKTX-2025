@@ -64,6 +64,12 @@ const TwinklingStar = ({ style }) => {
 
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { Login } from './src/components/Login';
+import { ScannerTab } from './src/components/ScannerTab';
+import { CultureTab } from './src/components/CultureTab';
+import { CollectionTab } from './src/components/CollectionTab';
+import { SkyMapTab } from './src/components/SkyMapTab';
+import { ProfileTab } from './src/components/ProfileTab';
+import { Ionicons } from '@expo/vector-icons';
 
 // Main app content component
 function AppContent() {
@@ -80,7 +86,7 @@ function AppContent() {
   const [showPhotoCapture, setShowPhotoCapture] = useState(false);
   const [showPhotoGallery, setShowPhotoGallery] = useState(false);
   const [selectedConstellationForPhoto, setSelectedConstellationForPhoto] = useState(null);
-  const [activeTab, setActiveTab] = useState('home');
+  const [activeTab, setActiveTab] = useState('scanner');
 
   // Animation refs
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -199,63 +205,21 @@ function AppContent() {
 
   const backgroundStars = generateBackgroundStars();
 
+  // Tab configuration
+  const tabs = [
+    { id: 'culture', label: 'Culture', icon: 'globe-outline', component: CultureTab },
+    { id: 'collection', label: 'Collection', icon: 'star-outline', component: CollectionTab },
+    { id: 'scanner', label: 'Scanner', icon: 'sparkles', component: ScannerTab },
+    { id: 'map', label: 'Sky Map', icon: 'map-outline', component: SkyMapTab },
+    { id: 'profile', label: 'Profile', icon: 'person-outline', component: ProfileTab },
+  ];
+
+  // Get active component
+  const ActiveComponent = tabs.find((tab) => tab.id === activeTab)?.component || ScannerTab;
+
   // Render tab content based on active tab
   const renderTabContent = () => {
-    switch (activeTab) {
-      case 'home':
-        return (
-          <View style={styles.tabContent}>
-            <Text style={styles.tabTitle}>Home</Text>
-            <Text style={styles.tabDescription}>
-              Welcome to Ancestral Skies! Explore the constellations and capture your own photos of the night sky.
-            </Text>
-            {/* Show a message that AR mode has better constellation viewing */}
-            <View style={styles.starMapMessage}>
-              <Text style={styles.starMapMessageText}>
-                Switch to AR mode for interactive constellations
-              </Text>
-            </View>
-          </View>
-        );
-      case 'map':
-        return (
-          <View style={styles.tabContent}>
-            <Text style={styles.tabTitle}>Star Map</Text>
-            <Text style={styles.tabDescription}>
-              Interactive star map coming soon. For now, use AR mode for the best constellation viewing experience.
-            </Text>
-          </View>
-        );
-      case 'gallery':
-        return (
-          <View style={styles.tabContent}>
-            <Text style={styles.tabTitle}>Gallery</Text>
-            <Text style={styles.tabDescription}>
-              Your captured constellation photos will appear here.
-            </Text>
-            <TouchableOpacity 
-              style={styles.galleryButton}
-              onPress={() => setShowPhotoGallery(true)}
-            >
-              <Text style={styles.galleryButtonText}>View Photos</Text>
-            </TouchableOpacity>
-          </View>
-        );
-      case 'profile':
-        return (
-          <View style={styles.tabContent}>
-            <Text style={styles.tabTitle}>Profile</Text>
-            <Text style={styles.tabDescription}>
-              User profile and settings coming soon.
-            </Text>
-            <Text style={styles.profileInfo}>
-              Welcome, {profile?.username || 'User'}!
-            </Text>
-          </View>
-        );
-      default:
-        return null;
-    }
+    return <ActiveComponent location={location} />;
   };
 
   // Simple SVG renderer for constellation artwork
@@ -391,55 +355,72 @@ function AppContent() {
         ))}
       </View>
 
-      {/* Tab Content */}
-      {renderTabContent()}
+      {/* Main content area */}
+      <View style={styles.mainContent}>
+        {renderTabContent()}
+      </View>
 
-      {/* Snapchat-style Capture Button */}
-      <TouchableOpacity
-        style={styles.snapchatCaptureButton}
-        onPress={() => {
-          setSelectedConstellationForPhoto(selectedConstellation);
-          setShowPhotoCapture(true);
-        }}
-      >
-        <View style={styles.captureButtonOuter}>
-          <View style={styles.captureButtonInner} />
-        </View>
-      </TouchableOpacity>
-
-      {/* Bottom Tab Navigation */}
+      {/* Bottom tab navigation */}
       <View style={styles.bottomTabBar}>
-        <TouchableOpacity
-          style={[styles.tabButton, activeTab === 'home' && styles.activeTabButton]}
-          onPress={() => setActiveTab('home')}
-        >
-          <Text style={[styles.tabIcon, activeTab === 'home' && styles.activeTabIcon]}>🏠</Text>
-          <Text style={[styles.tabLabel, activeTab === 'home' && styles.activeTabLabel]}>Home</Text>
-        </TouchableOpacity>
+        <View style={styles.tabContainer}>
+          {tabs.map((tab) => {
+            const Icon = Ionicons;
+            const isActive = activeTab === tab.id;
+            const isScanner = tab.id === 'scanner';
 
-        <TouchableOpacity
-          style={[styles.tabButton, activeTab === 'map' && styles.activeTabButton]}
-          onPress={() => setActiveTab('map')}
-        >
-          <Text style={[styles.tabIcon, activeTab === 'map' && styles.activeTabIcon]}>🗺️</Text>
-          <Text style={[styles.tabLabel, activeTab === 'map' && styles.activeTabLabel]}>Map</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.tabButton, activeTab === 'gallery' && styles.activeTabButton]}
-          onPress={() => setActiveTab('gallery')}
-        >
-          <Text style={[styles.tabIcon, activeTab === 'gallery' && styles.activeTabIcon]}>🖼️</Text>
-          <Text style={[styles.tabLabel, activeTab === 'gallery' && styles.activeTabLabel]}>Gallery</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.tabButton, activeTab === 'profile' && styles.activeTabButton]}
-          onPress={() => setActiveTab('profile')}
-        >
-          <Text style={[styles.tabIcon, activeTab === 'profile' && styles.activeTabIcon]}>👤</Text>
-          <Text style={[styles.tabLabel, activeTab === 'profile' && styles.activeTabLabel]}>Profile</Text>
-        </TouchableOpacity>
+            return (
+              <TouchableOpacity
+                key={tab.id}
+                onPress={() => setActiveTab(tab.id)}
+                style={[
+                  styles.tabButton,
+                  isActive && styles.activeTabButton,
+                  isScanner && styles.scannerTabButton
+                ]}
+              >
+                {isScanner ? (
+                  <View style={styles.scannerButtonContainer}>
+                    <View style={[
+                      styles.scannerButton,
+                      isActive && styles.activeScannerButton
+                    ]}>
+                      <Icon
+                        name={tab.icon}
+                        size={24}
+                        color={isActive ? "#FFD700" : "#FFFFFF"}
+                      />
+                    </View>
+                    <Text style={[
+                      styles.scannerTabLabel,
+                      isActive && styles.activeTabLabel
+                    ]}>
+                      {tab.label}
+                    </Text>
+                  </View>
+                ) : (
+                  <>
+                    <View style={styles.regularTabContent}>
+                      <Icon
+                        name={tab.icon}
+                        size={24}
+                        color={isActive ? "#FFD700" : "#FFFFFF"}
+                      />
+                      {isActive && (
+                        <View style={styles.activeIndicator} />
+                      )}
+                    </View>
+                    <Text style={[
+                      styles.tabLabel,
+                      isActive && styles.activeTabLabel
+                    ]}>
+                      {tab.label}
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
 
 
@@ -634,45 +615,9 @@ const styles = StyleSheet.create({
     textAlign: 'left',
     fontFamily: Platform.OS === 'ios' ? 'Avenir Next' : 'Roboto',
   },
-  // Tab Content Styles
-  tabContent: {
+  // Main Content Styles
+  mainContent: {
     flex: 1,
-    padding: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  tabTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#FFD700',
-    marginBottom: 15,
-    fontFamily: Platform.OS === 'ios' ? 'Avenir Next' : 'Roboto',
-  },
-  tabDescription: {
-    fontSize: 16,
-    color: '#FFFFFF',
-    textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 20,
-    fontFamily: Platform.OS === 'ios' ? 'Avenir Next' : 'Roboto',
-  },
-  galleryButton: {
-    backgroundColor: '#FFD700',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginTop: 10,
-  },
-  galleryButtonText: {
-    color: '#0c1445',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  profileInfo: {
-    fontSize: 18,
-    color: '#FFD700',
-    marginTop: 10,
-    fontFamily: Platform.OS === 'ios' ? 'Avenir Next' : 'Roboto',
   },
   
   // Snapchat-style Capture Button
@@ -710,36 +655,79 @@ const styles = StyleSheet.create({
   
   // Bottom Tab Navigation
   bottomTabBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    paddingTop: 10,
-    paddingBottom: Platform.OS === 'ios' ? 30 : 10,
     borderTopWidth: 1,
     borderTopColor: 'rgba(255, 215, 0, 0.3)',
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    backdropFilter: 'blur(10px)',
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    paddingHorizontal: 10,
+    paddingTop: 10,
+    paddingBottom: Platform.OS === 'ios' ? 30 : 10,
+    maxWidth: screenWidth * 0.9,
+    alignSelf: 'center',
   },
   tabButton: {
-    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
     paddingVertical: 8,
+    borderRadius: 10,
+    minWidth: 60,
   },
   activeTabButton: {
     backgroundColor: 'rgba(255, 215, 0, 0.1)',
   },
-  tabIcon: {
-    fontSize: 24,
-    marginBottom: 4,
+  scannerTabButton: {
+    marginTop: -10,
   },
-  activeTabIcon: {
-    fontSize: 26,
+  scannerButtonContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scannerButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(255, 215, 0, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 5,
+    borderWidth: 2,
+    borderColor: '#FFD700',
+  },
+  activeScannerButton: {
+    backgroundColor: '#FFD700',
+  },
+  scannerTabLabel: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  regularTabContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    position: 'relative',
+  },
+  activeIndicator: {
+    position: 'absolute',
+    bottom: -2,
+    left: '50%',
+    marginLeft: -2.5,
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: '#FFD700',
   },
   tabLabel: {
     color: '#FFFFFF',
     fontSize: 12,
-    fontFamily: Platform.OS === 'ios' ? 'Avenir Next' : 'Roboto',
+    fontWeight: '600',
+    marginTop: 4,
   },
   activeTabLabel: {
     color: '#FFD700',

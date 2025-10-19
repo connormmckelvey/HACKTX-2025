@@ -59,13 +59,18 @@ export const Onboarding = ({ onComplete }) => {
         });
 
         if (error) {
-          setError(`Sign Up Error: ${error.message}`);
+          // Handle specific error cases with better messaging
+          if (error.code === 'EMAIL_NOT_CONFIRMED') {
+            setError('✅ Account created! Please check your email and click the confirmation link, then sign in manually.');
+          } else {
+            setError(`Sign Up Error: ${error.message}`);
+          }
         } else {
           // Success - user will be logged in automatically
           setError('');
           // Show success message briefly
           setTimeout(() => {
-            setError('Account created and logging you in...');
+            setError('✅ Account created and logging you in...');
           }, 100);
         }
       } else {

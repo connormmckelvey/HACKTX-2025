@@ -141,7 +141,7 @@ export const ProfileTab = () => {
       'Our privacy policy explains how we collect, use, and protect your data. For the full policy, please visit our website.',
       [
         { text: 'OK', style: 'default' },
-        { text: 'Visit Website', onPress: () => Linking.openURL('https://ancestralskies.com/privacy') },
+        { text: 'Visit Website', onPress: () => Linking.openURL('https://skylore.com/privacy') },
       ]
     );
   };
@@ -149,10 +149,10 @@ export const ProfileTab = () => {
   const handleTermsPress = () => {
     Alert.alert(
       'Terms of Service',
-      'Our terms of service outline the rules and guidelines for using Ancestral Skies. For the full terms, please visit our website.',
+      'Our terms of service outline the rules and guidelines for using Skylore. For the full terms, please visit our website.',
       [
         { text: 'OK', style: 'default' },
-        { text: 'Visit Website', onPress: () => Linking.openURL('https://ancestralskies.com/terms') },
+        { text: 'Visit Website', onPress: () => Linking.openURL('https://skylore.com/terms') },
       ]
     );
   };
@@ -233,7 +233,7 @@ export const ProfileTab = () => {
           <Ionicons name="information-circle-outline" size={24} color={theme.colors.primary} />
           <View style={styles.settingContent}>
             <Text style={styles.settingTitle}>App Version</Text>
-            <Text style={styles.settingDescription}>Ancestral Skies v1.0.0</Text>
+            <Text style={styles.settingDescription}>Skylore v1.0.0</Text>
           </View>
         </TouchableOpacity>
 

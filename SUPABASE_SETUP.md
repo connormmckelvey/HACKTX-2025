@@ -1,6 +1,6 @@
 # Supabase Integration Setup
 
-This document provides instructions for setting up Supabase integration with your Ancestral Skies app.
+This document provides instructions for setting up Supabase integration with your Skylore app.
 
 ## Prerequisites
 

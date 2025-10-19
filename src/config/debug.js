@@ -1,4 +1,4 @@
-// Debug configuration for Ancestral Skies app
+// Debug configuration for Skylore app
 // Set to false in production to disable console logs
 
 export const DEBUG_CONFIG = {

@@ -76,7 +76,7 @@ function AppContent() {
 
   // Debug logging for iPhone troubleshooting
   useEffect(() => {
-    console.log('🚀 Ancestral Skies App Started');
+    console.log('🚀 Skylore App Started');
     console.log('📍 Location permission:', locationPermission);
     console.log('📱 Platform:', Platform.OS);
     console.log('🔧 Current screen:', currentScreen);

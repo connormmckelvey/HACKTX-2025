@@ -158,7 +158,7 @@ export const CultureTab = ({ location }) => {
     <View style={styles.container}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
                 <View style={styles.header}>
-                  <Text style={styles.title}>Ancestral Stories</Text>
+                  <Text style={styles.title}>Sky Stories</Text>
                   <Text style={styles.subtitle}>
                     Discover the rich cultural traditions behind the constellations
                   </Text>

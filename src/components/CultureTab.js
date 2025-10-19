@@ -8,102 +8,72 @@ import {
   Dimensions,
   Modal,
   Animated,
+  FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { AstronomyCalculator } from '../utils/astronomy';
+import { LinearGradient } from 'expo-linear-gradient';
+import { indigenousService } from '../core/services/indigenousCulturalService';
+import theme from '../styles/theme';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-// Import constellation data from astronomy utils
-const CONSTELLATIONS = [
-  {
-    id: 1,
-    name: "Pegasus - The Winged Horse",
-    story: "Pegasus, the great winged horse, soars across the fall sky. In indigenous traditions, horses were sacred animals that carried messages between the spirit world and earth. The Great Square of Pegasus forms a distinctive pattern that guides travelers and reminds us of the freedom to explore new horizons. This constellation teaches us about courage, adventure, and the power of imagination to carry us beyond our earthly limitations.",
-    artwork: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      <path d="M20 30 L40 30 L40 50 L20 50 Z" stroke="#FFD700" stroke-width="2" fill="none"/>
-      <circle cx="20" cy="30" r="3" fill="#FFD700"/>
-      <circle cx="40" cy="30" r="3" fill="#FFD700"/>
-      <circle cx="40" cy="50" r="3" fill="#FFD700"/>
-      <circle cx="20" cy="50" r="3" fill="#FFD700"/>
-      <path d="M40 40 L60 35 L70 45" stroke="#FFD700" stroke-width="1.5"/>
-    </svg>`,
-    seasons: ['fall', 'winter']
-  },
-  {
-    id: 2,
-    name: "Andromeda - The Princess",
-    story: "Andromeda represents the princess who was saved from the sea monster by Perseus. In indigenous stories, she symbolizes the strength and wisdom of women who guide their communities through difficult times. The Andromeda Galaxy, visible to the naked eye, reminds us of the vastness of the universe and our connection to the cosmos. This constellation teaches us about courage, sacrifice, and the power of love to overcome darkness.",
-    artwork: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      <path d="M20 50 L40 45 L60 50 L80 45" stroke="#FFD700" stroke-width="2" fill="none"/>
-      <circle cx="20" cy="50" r="3" fill="#FFD700"/>
-      <circle cx="40" cy="45" r="3" fill="#FFD700"/>
-      <circle cx="60" cy="50" r="3" fill="#FFD700"/>
-      <circle cx="80" cy="45" r="3" fill="#FFD700"/>
-    </svg>`,
-    seasons: ['fall', 'winter']
-  },
-  {
-    id: 3,
-    name: "Cassiopeia - The Queen",
-    story: "Cassiopeia sits high in the fall sky, her distinctive W-shape marking her throne. In indigenous traditions, she represents the wisdom keeper who holds the knowledge of the stars and seasons. Her position near the North Star makes her a reliable guide for navigation and timekeeping. This constellation teaches us about leadership, wisdom, and the responsibility of those who hold knowledge to share it wisely with others.",
-    artwork: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      <path d="M20 60 L40 40 L60 60 L80 40 L100 60" stroke="#FFD700" stroke-width="2" fill="none"/>
-      <circle cx="20" cy="60" r="3" fill="#FFD700"/>
-      <circle cx="40" cy="40" r="3" fill="#FFD700"/>
-      <circle cx="60" cy="60" r="3" fill="#FFD700"/>
-      <circle cx="80" cy="40" r="3" fill="#FFD700"/>
-      <circle cx="100" cy="60" r="3" fill="#FFD700"/>
-    </svg>`,
-    seasons: ['fall', 'winter']
-  },
-  {
-    id: 4,
-    name: "Perseus - The Hero",
-    story: "Perseus represents the great hero who saved Andromeda from the sea monster. In indigenous stories, he symbolizes the protector who defends the community from danger and brings light to dark places. The variable star Algol, known as the 'Demon Star,' reminds us that even heroes face challenges and that courage is not the absence of fear, but the willingness to act despite it.",
-    artwork: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      <path d="M20 50 Q30 45 40 50 Q50 55 60 50 Q70 45 80 50" stroke="#FFD700" stroke-width="2" fill="none"/>
-      <circle cx="30" cy="50" r="2" fill="#FFD700"/>
-      <circle cx="50" cy="52" r="2" fill="#FFD700"/>
-      <circle cx="70" cy="48" r="2" fill="#FFD700"/>
-      <path d="M25 45 L35 55 M45 47 L55 57 M65 43 L75 53" stroke="#FFD700" stroke-width="1"/>
-    </svg>`,
-    seasons: ['fall', 'winter']
-  },
-  {
-    id: 5,
-    name: "Orion - The Hunter",
-    story: "The mighty hunter Orion rises in the fall evening sky, his belt of three bright stars marking his waist. In indigenous stories, Orion represents the great hunter who provided for his people, his bow drawn and ready. The red star Betelgeuse marks his shoulder, while the blue-white Rigel shines at his foot. This constellation teaches us about strength, courage, and the responsibility of providing for others.",
-    artwork: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      <path d="M50 20 L30 40 L35 45 L45 35 L55 35 L65 45 L70 40 Z" stroke="#FFD700" stroke-width="2" fill="none"/>
-      <circle cx="30" cy="40" r="3" fill="#FFD700"/>
-      <circle cx="45" cy="35" r="3" fill="#FFD700"/>
-      <circle cx="55" cy="35" r="3" fill="#FFD700"/>
-      <circle cx="70" cy="40" r="3" fill="#FFD700"/>
-      <path d="M40 25 Q50 15 60 25" stroke="#FFD700" stroke-width="1.5"/>
-    </svg>`,
-    seasons: ['fall', 'winter']
-  }
+// Common constellations to showcase indigenous stories
+const FEATURED_CONSTELLATIONS = [
+  'Ursa Major',
+  'Pleiades', 
+  'Orion',
+  'Polaris',
+  'Milky Way',
+  'Cassiopeia',
+  'Corona Borealis',
+  'Scorpius',
+  'Gemini',
+  'Taurus'
 ];
 
 export const CultureTab = ({ location }) => {
-  const [selectedConstellation, setSelectedConstellation] = useState(null);
-  const [visibleConstellations, setVisibleConstellations] = useState([]);
+  const [selectedStory, setSelectedStory] = useState(null);
+  const [constellationStories, setConstellationStories] = useState([]);
+  const [selectedCulture, setSelectedCulture] = useState('All Cultures');
+  const [availableCultures, setAvailableCultures] = useState([]);
   const [modalY] = useState(new Animated.Value(screenHeight));
 
   useEffect(() => {
-    if (location) {
-      // Get current season for filtering constellations
-      const currentSeason = AstronomyCalculator.getCurrentSeason();
-      const filtered = CONSTELLATIONS.filter(constellation =>
-        constellation.seasons && constellation.seasons.includes(currentSeason)
-      );
-      setVisibleConstellations(filtered);
-    }
-  }, [location]);
+    loadIndigenousStories();
+  }, []);
 
-  const showConstellationDetails = (constellation) => {
-    setSelectedConstellation(constellation);
+  const loadIndigenousStories = () => {
+    const stories = [];
+    const cultures = new Set();
+    
+    FEATURED_CONSTELLATIONS.forEach(constellationName => {
+      const constellationStories = indigenousService.findStoriesWithMappings(constellationName);
+      if (constellationStories.length > 0) {
+        stories.push({
+          constellation: constellationName,
+          stories: constellationStories
+        });
+        constellationStories.forEach(story => cultures.add(story.culture));
+      }
+    });
+    
+    setConstellationStories(stories);
+    setAvailableCultures(['All Cultures', ...Array.from(cultures).sort()]);
+  };
+
+  const getFilteredStories = () => {
+    if (selectedCulture === 'All Cultures') {
+      return constellationStories;
+    }
+    
+    return constellationStories.map(item => ({
+      ...item,
+      stories: item.stories.filter(story => story.culture === selectedCulture)
+    })).filter(item => item.stories.length > 0);
+  };
+
+  const showStoryDetails = (story) => {
+    setSelectedStory(story);
     Animated.spring(modalY, {
       toValue: 0,
       useNativeDriver: true,
@@ -119,45 +89,110 @@ export const CultureTab = ({ location }) => {
       tension: 100,
       friction: 8,
     }).start(() => {
-      setSelectedConstellation(null);
+      setSelectedStory(null);
     });
   };
 
-  const renderConstellationCard = (constellation) => (
-    <TouchableOpacity
-      key={constellation.id}
-      style={styles.constellationCard}
-      onPress={() => showConstellationDetails(constellation)}
-    >
-      <View style={styles.cardContent}>
-        <Text style={styles.constellationName}>{constellation.name}</Text>
-        <Text style={styles.constellationPreview} numberOfLines={2}>
-          {constellation.story.substring(0, 100)}...
-        </Text>
-        <View style={styles.cardFooter}>
-          <Ionicons name="chevron-forward" size={20} color="#FFD700" />
+  const renderCultureFilter = () => (
+    <View style={styles.cultureFilter}>
+      <Text style={styles.filterLabel}>Cultural Perspective:</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.cultureScroll}>
+        {availableCultures.map((culture) => (
+          <TouchableOpacity
+            key={culture}
+            style={[
+              styles.cultureButton,
+              selectedCulture === culture && styles.activeCultureButton
+            ]}
+            onPress={() => setSelectedCulture(culture)}
+          >
+            <Text style={[
+              styles.cultureButtonText,
+              selectedCulture === culture && styles.activeCultureButtonText
+            ]}>
+              {culture}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </View>
+  );
+
+  const renderConstellationCard = (constellationData) => {
+    const { constellation, stories } = constellationData;
+    
+    return (
+      <View key={constellation} style={styles.constellationSection}>
+        <Text style={styles.constellationTitle}>{constellation}</Text>
+        <View style={styles.storiesContainer}>
+          {stories.map((story, index) => (
+            <TouchableOpacity
+              key={`${story.culture}-${index}`}
+              style={styles.storyCard}
+              onPress={() => showStoryDetails(story)}
+            >
+              <LinearGradient
+                colors={theme.gradients.card}
+                style={styles.cardGradient}
+              >
+                <View style={styles.cardHeader}>
+                  <Text style={styles.cultureName}>{story.culture}</Text>
+                  <Text style={styles.objectType}>{story.object_type}</Text>
+                </View>
+                <Text style={styles.indigenousName}>{story.indigenous_name}</Text>
+                <Text style={styles.storyPreview} numberOfLines={3}>
+                  {story.story_or_meaning}
+                </Text>
+                <View style={styles.cardFooter}>
+                  <Ionicons name="chevron-forward" size={20} color={theme.colors.primary} />
+                </View>
+              </LinearGradient>
+            </TouchableOpacity>
+          ))}
         </View>
       </View>
-    </TouchableOpacity>
-  );
+    );
+  };
 
   return (
     <View style={styles.container}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Cultural Stories</Text>
-          <Text style={styles.subtitle}>
-            Discover the ancestral stories behind the constellations
-          </Text>
-        </View>
+                <View style={styles.header}>
+                  <Text style={styles.title}>Ancestral Stories</Text>
+                  <Text style={styles.subtitle}>
+                    Discover the rich cultural traditions behind the constellations
+                  </Text>
+                  <Text style={styles.missionText}>
+                    Explore how Indigenous peoples around the world have mapped the stars, 
+                    each culture bringing unique wisdom and meaning to the celestial realm.
+                  </Text>
+                  
+                  {/* Educational Call-to-Action */}
+                  <View style={styles.educationBanner}>
+                    <LinearGradient
+                      colors={theme.gradients.card}
+                      style={styles.educationBannerGradient}
+                    >
+                      <Ionicons name="school-outline" size={24} color={theme.colors.primary} />
+                      <View style={styles.educationBannerContent}>
+                        <Text style={styles.educationBannerTitle}>Educational Mission</Text>
+                        <Text style={styles.educationBannerText}>
+                          Learn about the diverse ways humanity has understood the night sky
+                        </Text>
+                      </View>
+                    </LinearGradient>
+                  </View>
+                </View>
+
+        {renderCultureFilter()}
 
         <View style={styles.constellationsList}>
-          {visibleConstellations.map(renderConstellationCard)}
+          {getFilteredStories().map(renderConstellationCard)}
         </View>
       </ScrollView>
 
-      {/* Constellation Details Modal */}
-      <Modal visible={!!selectedConstellation} transparent animationType="none">
+      {/* Story Details Modal */}
+      <Modal visible={!!selectedStory} transparent animationType="none">
         <View style={styles.modalOverlay}>
           <Animated.View
             style={[
@@ -169,18 +204,24 @@ export const CultureTab = ({ location }) => {
           >
             <View style={styles.modalHandle} />
             <TouchableOpacity style={styles.closeButton} onPress={hideModal}>
-              <Ionicons name="close" size={24} color="#FFD700" />
+              <Ionicons name="close" size={24} color={theme.colors.primary} />
             </TouchableOpacity>
 
-            {selectedConstellation && (
+            {selectedStory && (
               <ScrollView style={styles.modalScroll}>
-                <View style={styles.artworkContainer}>
-                  <Text style={styles.modalTitle}>{selectedConstellation.name}</Text>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>{selectedStory.indigenous_name}</Text>
+                  <Text style={styles.modalSubtitle}>
+                    {selectedStory.culture} • {selectedStory.object_type}
+                  </Text>
+                  <Text style={styles.westernName}>
+                    Western Name: {selectedStory.western_name}
+                  </Text>
                 </View>
 
                 <View style={styles.storyContainer}>
-                  <Text style={styles.constellationStory}>
-                    {selectedConstellation.story}
+                  <Text style={styles.storyText}>
+                    {selectedStory.story_or_meaning}
                   </Text>
                 </View>
               </ScrollView>
@@ -195,117 +236,243 @@ export const CultureTab = ({ location }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    backgroundColor: theme.colors.black,
   },
   scrollView: {
     flex: 1,
-    padding: 20,
+    padding: theme.spacing.xl,
   },
   header: {
-    marginBottom: 30,
+    marginBottom: theme.spacing.xxxl,
     alignItems: 'center',
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#FFD700',
-    marginBottom: 10,
+    fontSize: theme.typography.h2,
+    fontWeight: theme.typography.bold,
+    color: theme.colors.primary,
+    marginBottom: theme.spacing.md,
     textAlign: 'center',
+    fontFamily: theme.typography.fontFamily,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#FFFFFF',
+    fontSize: theme.typography.body,
+    color: theme.colors.textPrimary,
     textAlign: 'center',
     lineHeight: 24,
-    opacity: 0.8,
+    marginBottom: theme.spacing.lg,
+    opacity: 0.9,
+    fontFamily: theme.typography.fontFamily,
+  },
+  missionText: {
+    fontSize: theme.typography.caption,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+    fontStyle: 'italic',
+    fontFamily: theme.typography.fontFamily,
+  },
+  educationBanner: {
+    marginTop: theme.spacing.xl,
+    borderRadius: theme.borderRadius.lg,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: theme.colors.cardBorder,
+    ...theme.shadows.medium,
+  },
+  educationBannerGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: theme.spacing.lg,
+  },
+  educationBannerContent: {
+    flex: 1,
+    marginLeft: theme.spacing.md,
+  },
+  educationBannerTitle: {
+    fontSize: theme.typography.h4,
+    fontWeight: theme.typography.bold,
+    color: theme.colors.primary,
+    marginBottom: theme.spacing.xs,
+    fontFamily: theme.typography.fontFamily,
+  },
+  educationBannerText: {
+    fontSize: theme.typography.caption,
+    color: theme.colors.textSecondary,
+    lineHeight: 18,
+    fontFamily: theme.typography.fontFamily,
+  },
+  cultureFilter: {
+    marginBottom: theme.spacing.xl,
+  },
+  filterLabel: {
+    fontSize: theme.typography.caption,
+    color: theme.colors.primary,
+    fontWeight: theme.typography.semibold,
+    marginBottom: theme.spacing.md,
+    fontFamily: theme.typography.fontFamily,
+  },
+  cultureScroll: {
+    flexDirection: 'row',
+  },
+  cultureButton: {
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
+    marginRight: theme.spacing.md,
+    backgroundColor: theme.colors.cardBackground,
+    borderRadius: theme.borderRadius.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.cardBorder,
+  },
+  activeCultureButton: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
+  },
+  cultureButtonText: {
+    fontSize: theme.typography.caption,
+    color: theme.colors.textPrimary,
+    fontWeight: theme.typography.medium,
+    fontFamily: theme.typography.fontFamily,
+  },
+  activeCultureButtonText: {
+    color: theme.colors.black,
+    fontWeight: theme.typography.bold,
   },
   constellationsList: {
-    paddingBottom: 20,
+    paddingBottom: theme.spacing.xl,
   },
-  constellationCard: {
-    backgroundColor: 'rgba(255, 215, 0, 0.1)',
-    borderRadius: 15,
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 215, 0, 0.3)',
+  constellationSection: {
+    marginBottom: theme.spacing.xxxl,
+  },
+  constellationTitle: {
+    fontSize: theme.typography.h4,
+    fontWeight: theme.typography.bold,
+    color: theme.colors.primary,
+    marginBottom: theme.spacing.lg,
+    fontFamily: theme.typography.fontFamily,
+  },
+  storiesContainer: {
+    gap: theme.spacing.lg,
+  },
+  storyCard: {
+    borderRadius: theme.borderRadius.lg,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: theme.colors.cardBorder,
+    ...theme.shadows.medium,
   },
-  cardContent: {
-    padding: 20,
+  cardGradient: {
+    padding: theme.spacing.xl,
   },
-  constellationName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFD700',
-    marginBottom: 10,
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: theme.spacing.md,
   },
-  constellationPreview: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    lineHeight: 20,
-    opacity: 0.9,
+  cultureName: {
+    fontSize: theme.typography.caption,
+    color: theme.colors.primary,
+    fontWeight: theme.typography.bold,
+    fontFamily: theme.typography.fontFamily,
+  },
+  objectType: {
+    fontSize: theme.typography.small,
+    color: theme.colors.textMuted,
+    fontStyle: 'italic',
+    fontFamily: theme.typography.fontFamily,
+  },
+  indigenousName: {
+    fontSize: theme.typography.h4,
+    fontWeight: theme.typography.bold,
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.md,
+    fontFamily: theme.typography.fontFamily,
+  },
+  storyPreview: {
+    fontSize: theme.typography.body,
+    color: theme.colors.textSecondary,
+    lineHeight: 22,
+    marginBottom: theme.spacing.lg,
+    fontFamily: theme.typography.fontFamily,
   },
   cardFooter: {
     alignItems: 'flex-end',
-    marginTop: 10,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: theme.colors.overlayLight,
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#1a1f4a',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    backgroundColor: theme.colors.cardBackgroundSolid,
+    borderTopLeftRadius: theme.borderRadius.xl,
+    borderTopRightRadius: theme.borderRadius.xl,
     minHeight: screenHeight * 0.6,
     maxHeight: screenHeight * 0.8,
   },
   modalHandle: {
     width: 40,
     height: 4,
-    backgroundColor: '#FFD700',
+    backgroundColor: theme.colors.primary,
     borderRadius: 2,
     alignSelf: 'center',
-    marginTop: 10,
-    marginBottom: 10,
+    marginTop: theme.spacing.md,
+    marginBottom: theme.spacing.md,
   },
   closeButton: {
     position: 'absolute',
-    top: 20,
-    right: 20,
+    top: theme.spacing.xl,
+    right: theme.spacing.xl,
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: 'rgba(255, 215, 0, 0.2)',
+    backgroundColor: theme.colors.cardBackground,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1,
   },
   modalScroll: {
-    padding: 20,
+    padding: theme.spacing.xl,
     paddingTop: 60,
   },
-  artworkContainer: {
+  modalHeader: {
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: theme.spacing.xl,
   },
   modalTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FFD700',
+    fontSize: theme.typography.h3,
+    fontWeight: theme.typography.bold,
+    color: theme.colors.primary,
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: theme.spacing.sm,
+    fontFamily: theme.typography.fontFamily,
+  },
+  modalSubtitle: {
+    fontSize: theme.typography.body,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: theme.spacing.sm,
+    fontFamily: theme.typography.fontFamily,
+  },
+  westernName: {
+    fontSize: theme.typography.caption,
+    color: theme.colors.textMuted,
+    textAlign: 'center',
+    fontStyle: 'italic',
+    fontFamily: theme.typography.fontFamily,
   },
   storyContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 15,
-    padding: 20,
+    backgroundColor: theme.colors.cardBackground,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.xl,
+    borderWidth: 1,
+    borderColor: theme.colors.cardBorder,
   },
-  constellationStory: {
-    fontSize: 16,
-    color: '#FFFFFF',
+  storyText: {
+    fontSize: theme.typography.body,
+    color: theme.colors.textPrimary,
     lineHeight: 26,
     textAlign: 'left',
+    fontFamily: theme.typography.fontFamily,
   },
 });

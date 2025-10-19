@@ -164,8 +164,14 @@ export const AuthProvider = ({ children }) => {
 
         if (signInError) {
           console.log('Automatic login failed, user will need to sign in manually:', signInError.message);
-          // Return the original signup data - user can sign in manually
-          return { data, error: null };
+          // Return a more user-friendly error message
+          return { 
+            data, 
+            error: {
+              message: 'Account created! Please check your email and click the confirmation link, then sign in manually.',
+              code: 'EMAIL_NOT_CONFIRMED'
+            }
+          };
         } else {
           console.log('Automatic login successful!');
           return { data: signInData, error: null };

@@ -1,0 +1,1031 @@
+{
+    "celestial_database":",
+        "object_type": "Asterism",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Ursa Major / Big Dipper",
+        "culture": "Cree",
+        "indigenous_name": "Mista Muskwa",
+        "story_or_meaning": "The Great Bear, who sits atop the stars of the Big Dipper. He was a bully defeated by seven brave birds (Corona Borealis). [2]",
+        "object_type": "Asterism",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Ursa Major / Big Dipper",
+        "culture": "Iroquois",
+        "indigenous_name": "The Bear and The Hunters",
+        "story_or_meaning": "The bowl of the dipper is the Bear, and the three stars of the handle are the hunters pursuing it. [3]",
+        "object_type": "Asterism",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Ursa Major / Big Dipper",
+        "culture": "Inuit",
+        "indigenous_name": "Tukturjuit",
+        "story_or_meaning": "Giant Caribou, reflecting the local fauna of the Arctic. ",
+        "object_type": "Asterism",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Ursa Major / Big Dipper",
+        "culture": "Snohomish",
+        "indigenous_name": "Great Elk",
+        "story_or_meaning": "An elk, another animal of regional importance. [3]",
+        "object_type": "Asterism",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Ursa Major / Big Dipper",
+        "culture": "Arapaho",
+        "indigenous_name": "Bison Bulls",
+        "story_or_meaning": "The stars are seen as Bison Bulls. [3]",
+        "object_type": "Asterism",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Pleiades",
+        "culture": "Cree",
+        "indigenous_name": "Pakone Kisik",
+        "story_or_meaning": "'The Hole in the Sky.' This is where the Star Woman fell from another dimension to become the first human on Earth, teaching that 'We come from the stars'. [2]",
+        "object_type": "Asterism",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Pleiades",
+        "culture": "Cherokee",
+        "indigenous_name": "The Boys",
+        "story_or_meaning": "Seven boys who neglected their chores to play a game. When their mothers scolded them, they prayed to the spirits and were lifted into the sky to become the seven stars. [1]",
+        "object_type": "Asterism",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Pleiades",
+        "culture": "Iroquois",
+        "indigenous_name": "Dancers",
+        "story_or_meaning": "A group of celestial dancers. [3]",
+        "object_type": "Asterism",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Pleiades",
+        "culture": "Blackfoot",
+        "indigenous_name": "Lost Children",
+        "story_or_meaning": "A group of children who became lost and were placed in the sky. [3]",
+        "object_type": "Asterism",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Orion's Belt",
+        "culture": "Cree",
+        "indigenous_name": "Three Chiefs",
+        "story_or_meaning": "A line of three chiefs. ",
+        "object_type": "Asterism",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Orion's Belt",
+        "culture": "Inuit",
+        "indigenous_name": "Ullaktut",
+        "story_or_meaning": "'The Runners' or 'Three Hunters' chasing their prey. ",
+        "object_type": "Asterism",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Orion's Belt",
+        "culture": "Tlingit",
+        "indigenous_name": "Men in a Line",
+        "story_or_meaning": "A simple descriptive name for the three aligned stars. [3]",
+        "object_type": "Asterism",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Orion's Belt",
+        "culture": "Apache",
+        "indigenous_name": "Three Vertebrae",
+        "story_or_meaning": "The stars are seen as the vertebrae of an animal's spine. [3]",
+        "object_type": "Asterism",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Polaris (North Star)",
+        "culture": "Paiute",
+        "indigenous_name": "Fixed Star",
+        "story_or_meaning": "A mountain sheep named Na-gah who climbed a peak and became trapped. His father turned him into a star that didn't move so everyone could see him. [1]",
+        "object_type": "Star",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Polaris (North Star)",
+        "culture": "Iroquois",
+        "indigenous_name": "Star that does not move",
+        "story_or_meaning": "A name reflecting its key observational property. [3]",
+        "object_type": "Star",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Polaris (North Star)",
+        "culture": "Cree",
+        "indigenous_name": "Guide of the People",
+        "story_or_meaning": "A name reflecting its practical use in navigation. [3]",
+        "object_type": "Star",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Polaris (North Star)",
+        "culture": "Lakota",
+        "indigenous_name": "Star that stands still",
+        "story_or_meaning": "Another name reflecting its immobility. [3]",
+        "object_type": "Star",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Milky Way",
+        "culture": "Blackfeet",
+        "indigenous_name": "Wolf Trail",
+        "story_or_meaning": "Wolves were the first to pity the starving people and taught them how to survive. The trail is their path in the sky. [1]",
+        "object_type": "Galaxy Feature",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Milky Way",
+        "culture": "Lakota",
+        "indigenous_name": "Spirit Path",
+        "story_or_meaning": "The path that spirits take to the afterlife. [3]",
+        "object_type": "Galaxy Feature",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Milky Way",
+        "culture": "Cherokee",
+        "indigenous_name": "Dog Trail",
+        "story_or_meaning": "The path taken by a spirit dog. [3]",
+        "object_type": "Galaxy Feature",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Milky Way",
+        "culture": "Cree",
+        "indigenous_name": "Ghost Road",
+        "story_or_meaning": "A road for spirits or ghosts. [3]",
+        "object_type": "Galaxy Feature",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Corona Borealis",
+        "culture": "Cree",
+        "indigenous_name": "Seven Brave Birds",
+        "story_or_meaning": "The birds that defeated the bully bear, Mista Muskwa (associated with the Big Dipper). [2]",
+        "object_type": "Constellation",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Corona Borealis",
+        "culture": "Shawnee",
+        "indigenous_name": "Celestial Sisters",
+        "story_or_meaning": "A group of sisters in the sky. [3]",
+        "object_type": "Constellation",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Corona Borealis",
+        "culture": "Cheyenne",
+        "indigenous_name": "Old Camp",
+        "story_or_meaning": "The circular shape is seen as an old, abandoned campsite. [3]",
+        "object_type": "Constellation",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Corona Borealis",
+        "culture": "Blackfoot",
+        "indigenous_name": "Spiderman's Lodge",
+        "story_or_meaning": "The lodge or home of a spider spirit. [3]",
+        "object_type": "Constellation",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Cassiopeia",
+        "culture": "Navajo",
+        "indigenous_name": "She who revolves",
+        "story_or_meaning": "A name describing its circumpolar motion around the North Star. [3]",
+        "object_type": "Constellation",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Cassiopeia",
+        "culture": "Zuni",
+        "indigenous_name": "Zig Zag",
+        "story_or_meaning": "A descriptive name for the 'W' shape of the constellation. [3]",
+        "object_type": "Constellation",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Cassiopeia",
+        "culture": "Pawnee",
+        "indigenous_name": "Rabbit",
+        "story_or_meaning": "The constellation is seen as a rabbit. [3]",
+        "object_type": "Constellation",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Mars",
+        "culture": "Cree",
+        "indigenous_name": "Mooswa Acak / Kitom Pampaniw",
+        "story_or_meaning": "Moose Spirit / Circles back. The name reflects Mars's retrograde motion, which mirrors a startled moose running in a circle before continuing on its way. [2]",
+        "object_type": "Planet",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Virgo (Spica)",
+        "culture": "Ancient Chinese",
+        "indigenous_name": "Jiǎo (Horn)",
+        "story_or_meaning": "Associated with the Crocodile. First mansion of the Azure Dragon of the East. ",
+        "object_type": "Lunar Mansion",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Virgo (Kappa Virginis)",
+        "culture": "Ancient Chinese",
+        "indigenous_name": "Kàng (Neck)",
+        "story_or_meaning": "Associated with the Dragon. Second mansion of the Azure Dragon of the East. ",
+        "object_type": "Lunar Mansion",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Libra (Alpha Librae)",
+        "culture": "Ancient Chinese",
+        "indigenous_name": "Dǐ (Root)",
+        "story_or_meaning": "Associated with the Badger. Third mansion of the Azure Dragon of the East. ",
+        "object_type": "Lunar Mansion",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Scorpius (Pi Scorpii)",
+        "culture": "Ancient Chinese",
+        "indigenous_name": "Fáng (Room)",
+        "story_or_meaning": "Associated with the Hare. Fourth mansion of the Azure Dragon of the East. ",
+        "object_type": "Lunar Mansion",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Scorpius (Antares)",
+        "culture": "Ancient Chinese",
+        "indigenous_name": "Xīn (Heart)",
+        "story_or_meaning": "Associated with the Fox. Fifth mansion of the Azure Dragon of the East. ",
+        "object_type": "Lunar Mansion",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Scorpius (Mu Scorpii)",
+        "culture": "Ancient Chinese",
+        "indigenous_name": "Wěi (Tail)",
+        "story_or_meaning": "Associated with the Tiger. Sixth mansion of the Azure Dragon of the East. ",
+        "object_type": "Lunar Mansion",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Sagittarius (Gamma Sagittarii)",
+        "culture": "Ancient Chinese",
+        "indigenous_name": "Jī (Winnowing Basket)",
+        "story_or_meaning": "Associated with the Leopard. Seventh mansion of the Azure Dragon of the East. ",
+        "object_type": "Lunar Mansion",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Sagittarius (Phi Sagittarii)",
+        "culture": "Ancient Chinese",
+        "indigenous_name": "Dǒu (Southern Dipper)",
+        "story_or_meaning": "Associated with the Unicorn. First mansion of the Black Tortoise of the North. ",
+        "object_type": "Lunar Mansion",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Capricornus (Beta Capricorni)",
+        "culture": "Ancient Chinese",
+        "indigenous_name": "Niú (Ox)",
+        "story_or_meaning": "Associated with the Buffalo. Second mansion of the Black Tortoise of the North. ",
+        "object_type": "Lunar Mansion",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Aquarius (Epsilon Aquarii)",
+        "culture": "Ancient Chinese",
+        "indigenous_name": "Nǚ (Girl)",
+        "story_or_meaning": "Associated with the Bat. Third mansion of the Black Tortoise of the North. ",
+        "object_type": "Lunar Mansion",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Aquarius (Beta Aquarii)",
+        "culture": "Ancient Chinese",
+        "indigenous_name": "Xū (Emptiness)",
+        "story_or_meaning": "Associated with the Rat. Fourth mansion of the Black Tortoise of the North. ",
+        "object_type": "Lunar Mansion",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Aquarius (Alpha Aquarii)",
+        "culture": "Ancient Chinese",
+        "indigenous_name": "Wēi (Rooftop)",
+        "story_or_meaning": "Associated with the Swallow. Fifth mansion of the Black Tortoise of the North. ",
+        "object_type": "Lunar Mansion",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Pegasus (Alpha Pegasi)",
+        "culture": "Ancient Chinese",
+        "indigenous_name": "Shì (House)",
+        "story_or_meaning": "Associated with the Pig. Sixth mansion of the Black Tortoise of the North. ",
+        "object_type": "Lunar Mansion",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Pegasus (Gamma Pegasi)",
+        "culture": "Ancient Chinese",
+        "indigenous_name": "Bì (Wall)",
+        "story_or_meaning": "Associated with the Porcupine. Seventh mansion of the Black Tortoise of the North. ",
+        "object_type": "Lunar Mansion",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Andromeda (Zeta Andromedae)",
+        "culture": "Ancient Chinese",
+        "indigenous_name": "Kuí (Legs)",
+        "story_or_meaning": "Associated with the Wolf. First mansion of the White Tiger of the West. ",
+        "object_type": "Lunar Mansion",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Aries (Beta Arietis)",
+        "culture": "Ancient Chinese",
+        "indigenous_name": "Lóu (Bond)",
+        "story_or_meaning": "Associated with the Dog. Second mansion of the White Tiger of the West. ",
+        "object_type": "Lunar Mansion",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Aries (35 Arietis)",
+        "culture": "Ancient Chinese",
+        "indigenous_name": "Wèi (Stomach)",
+        "story_or_meaning": "Associated with the Pheasant. Third mansion of the White Tiger of the West. ",
+        "object_type": "Lunar Mansion",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Taurus (Pleiades)",
+        "culture": "Ancient Chinese",
+        "indigenous_name": "Mǎo (Hairy Head)",
+        "story_or_meaning": "Associated with the Cockerel. Fourth mansion of the White Tiger of the West. ",
+        "object_type": "Lunar Mansion",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Taurus (Epsilon Tauri)",
+        "culture": "Ancient Chinese",
+        "indigenous_name": "Bì (Net)",
+        "story_or_meaning": "Associated with the Crow. Fifth mansion of the White Tiger of the West. ",
+        "object_type": "Lunar Mansion",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Orion (Lambda Orionis)",
+        "culture": "Ancient Chinese",
+        "indigenous_name": "Zuǐ (Turtle Beak)",
+        "story_or_meaning": "Associated with the Monkey. Sixth mansion of the White Tiger of the West. ",
+        "object_type": "Lunar Mansion",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Orion's Belt",
+        "culture": "Ancient Chinese",
+        "indigenous_name": "Shēn (Three Stars)",
+        "story_or_meaning": "Associated with the Gibbon. Seventh mansion of the White Tiger of the West. ",
+        "object_type": "Lunar Mansion",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Gemini (Mu Geminorum)",
+        "culture": "Ancient Chinese",
+        "indigenous_name": "Jǐng (Well)",
+        "story_or_meaning": "Associated with the Tapir. First mansion of the Vermilion Bird of the South. ",
+        "object_type": "Lunar Mansion",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Cancer (Theta Cancri)",
+        "culture": "Ancient Chinese",
+        "indigenous_name": "Guǐ (Ghost)",
+        "story_or_meaning": "Associated with the Goat. Second mansion of the Vermilion Bird of the South. ",
+        "object_type": "Lunar Mansion",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Hydra (Delta Hydrae)",
+        "culture": "Ancient Chinese",
+        "indigenous_name": "Liǔ (Willow)",
+        "story_or_meaning": "Associated with the Stag. Third mansion of the Vermilion Bird of the South. ",
+        "object_type": "Lunar Mansion",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Hydra (Alphard)",
+        "culture": "Ancient Chinese",
+        "indigenous_name": "Xīng (Star)",
+        "story_or_meaning": "Associated with the Horse. Fourth mansion of the Vermilion Bird of the South. ",
+        "object_type": "Lunar Mansion",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Hydra (Upsilon1 Hydrae)",
+        "culture": "Ancient Chinese",
+        "indigenous_name": "Zhāng (Extended Net)",
+        "story_or_meaning": "Associated with the Ox. Fifth mansion of the Vermilion Bird of the South. ",
+        "object_type": "Lunar Mansion",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Crater (Alpha Crateris)",
+        "culture": "Ancient Chinese",
+        "indigenous_name": "Yì (Wings)",
+        "story_or_meaning": "Associated with the Snake. Sixth mansion of the Vermilion Bird of the South. ",
+        "object_type": "Lunar Mansion",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Corvus (Gamma Corvi)",
+        "culture": "Ancient Chinese",
+        "indigenous_name": "Zhěn (Chariot)",
+        "story_or_meaning": "Associated with the Worm. Seventh mansion of the Vermilion Bird of the South. ",
+        "object_type": "Lunar Mansion",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Orion",
+        "culture": "Ancient Egyptian",
+        "indigenous_name": "Sah",
+        "story_or_meaning": "The celestial form of the god Osiris, ruler of the underworld. A symbol of death and resurrection. ",
+        "object_type": "Constellation",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Sirius (in Canis Major)",
+        "culture": "Ancient Egyptian",
+        "indigenous_name": "Sopdet",
+        "story_or_meaning": "The goddess Isis. Her heliacal rising heralded the annual flooding of the Nile and the start of the new year. ",
+        "object_type": "Star",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Ursa Major (Big Dipper)",
+        "culture": "Ancient Egyptian",
+        "indigenous_name": "Meskhetyu",
+        "story_or_meaning": "The Foreleg. Represents the leg of the god Seth. As a circumpolar ('imperishable') constellation, it symbolized eternity and immortality. Used in temple foundation rituals to determine north. ",
+        "object_type": "Asterism",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Draco (parts of)",
+        "culture": "Ancient Egyptian",
+        "indigenous_name": "Isis-Hesat",
+        "story_or_meaning": "The Female Hippopotamus. A protective mother goddess figure, often depicted holding a mooring post to control the 'imperishable' stars. [4]",
+        "object_type": "Constellation",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Cassiopeia (parts of)",
+        "culture": "Ancient Egyptian",
+        "indigenous_name": "Seret",
+        "story_or_meaning": "The Sheep. A southern constellation depicted as a sheep or ram standing in a boat. [5, 4]",
+        "object_type": "Constellation",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Argo Navis (parts of)",
+        "culture": "Ancient Egyptian",
+        "indigenous_name": "Wia",
+        "story_or_meaning": "The Boat. A southern constellation representing a celestial boat, a common motif for divine travel. ",
+        "object_type": "Constellation",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Aries",
+        "culture": "Vedic (Hindu)",
+        "indigenous_name": "Ashwini",
+        "story_or_meaning": "Horse's Head. Ruled by Ashvins (Physicians of the Gods). The power to heal and begin new things quickly. ",
+        "object_type": "Nakshatra (Lunar Mansion)",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Aries",
+        "culture": "Vedic (Hindu)",
+        "indigenous_name": "Bharani",
+        "story_or_meaning": "Yoni (Female Organ). Ruled by Yama (God of Death). The power of restraint and renewal; transformation and the cycle of birth and death. [6]",
+        "object_type": "Nakshatra (Lunar Mansion)",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Taurus (Pleiades)",
+        "culture": "Vedic (Hindu)",
+        "indigenous_name": "Krittika",
+        "story_or_meaning": "Knife or Spear. Ruled by Agni (God of Fire). The power to burn, cut, and purify. ",
+        "object_type": "Nakshatra (Lunar Mansion)",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Taurus (Aldebaran)",
+        "culture": "Vedic (Hindu)",
+        "indigenous_name": "Rohini",
+        "story_or_meaning": "Ox Cart. Ruled by Prajapati/Brahma (The Creator). The power to make things grow and create; fertility and abundance. The Moon's favorite wife. ",
+        "object_type": "Nakshatra (Lunar Mansion)",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Orion",
+        "culture": "Vedic (Hindu)",
+        "indigenous_name": "Mrigashirsha",
+        "story_or_meaning": "Deer's Head. Ruled by Soma (The Moon God). The power to give fulfillment and joy; searching and seeking. ",
+        "object_type": "Nakshatra (Lunar Mansion)",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Orion/Gemini (Betelgeuse)",
+        "culture": "Vedic (Hindu)",
+        "indigenous_name": "Ardra",
+        "story_or_meaning": "Teardrop or Diamond. Ruled by Rudra (The Storm God). The power to make effort and achieve; overcoming struggle. ",
+        "object_type": "Nakshatra (Lunar Mansion)",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Gemini (Castor & Pollux)",
+        "culture": "Vedic (Hindu)",
+        "indigenous_name": "Punarvasu",
+        "story_or_meaning": "Bow and Quiver. Ruled by Aditi (Mother of the Gods). The power to gain wealth or substance; renewal and return of hope. ",
+        "object_type": "Nakshatra (Lunar Mansion)",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Cancer",
+        "culture": "Vedic (Hindu)",
+        "indigenous_name": "Pushya",
+        "story_or_meaning": "Cow's Udder or Flower. Ruled by Brihaspati (Priest of the Gods). The power to create spiritual energy; nourishment and care. ",
+        "object_type": "Nakshatra (Lunar Mansion)",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Hydra",
+        "culture": "Vedic (Hindu)",
+        "indigenous_name": "Ashlesha",
+        "story_or_meaning": "Coiled Serpent. Ruled by Nagas (Serpent Deities). The power to inflict poison and destroy; intense, penetrating insight. ",
+        "object_type": "Nakshatra (Lunar Mansion)",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Leo (Regulus)",
+        "culture": "Vedic (Hindu)",
+        "indigenous_name": "Magha",
+        "story_or_meaning": "Royal Throne. Ruled by Pitris (The Ancestors). The power to leave the body; connection to legacy, tradition, and authority. ",
+        "object_type": "Nakshatra (Lunar Mansion)",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Leo",
+        "culture": "Vedic (Hindu)",
+        "indigenous_name": "Purva Phalguni",
+        "story_or_meaning": "Front legs of a bed. Ruled by Bhaga (God of Marital Bliss). The power of procreation; rest, pleasure, and enjoyment. ",
+        "object_type": "Nakshatra (Lunar Mansion)",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Leo/Virgo",
+        "culture": "Vedic (Hindu)",
+        "indigenous_name": "Uttara Phalguni",
+        "story_or_meaning": "Back legs of a bed. Ruled by Aryaman (God of Patronage). The power of prosperity through partnership; friendship and commitment. ",
+        "object_type": "Nakshatra (Lunar Mansion)",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Virgo (Corvus)",
+        "culture": "Vedic (Hindu)",
+        "indigenous_name": "Hasta",
+        "story_or_meaning": "Hand or Fist. Ruled by Savitar (The Sun God). The power to gain what one seeks and place it in one's hand; skill and creativity. ",
+        "object_type": "Nakshatra (Lunar Mansion)",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Virgo (Spica)",
+        "culture": "Vedic (Hindu)",
+        "indigenous_name": "Chitra",
+        "story_or_meaning": "Bright Jewel or Pearl. Ruled by Tvashtar/Vishwakarma (The Celestial Architect). The power to accumulate merit; creating beauty, art, and structure. ",
+        "object_type": "Nakshatra (Lunar Mansion)",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Boötes (Arcturus)",
+        "culture": "Vedic (Hindu)",
+        "indigenous_name": "Swati",
+        "story_or_meaning": "Blade of grass. Ruled by Vayu (The Wind God). The power to scatter like the wind; independence and movement. ",
+        "object_type": "Nakshatra (Lunar Mansion)",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Libra",
+        "culture": "Vedic (Hindu)",
+        "indigenous_name": "Vishakha",
+        "story_or_meaning": "Triumphal Arch. Ruled by Indra & Agni. The power to achieve many and various fruits in life; ambition and determination. ",
+        "object_type": "Nakshatra (Lunar Mansion)",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Scorpius",
+        "culture": "Vedic (Hindu)",
+        "indigenous_name": "Anuradha",
+        "story_or_meaning": "Lotus Flower. Ruled by Mitra (God of Friendship). The power to worship; success through cooperation and devotion. ",
+        "object_type": "Nakshatra (Lunar Mansion)",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Scorpius (Antares)",
+        "culture": "Vedic (Hindu)",
+        "indigenous_name": "Jyeshtha",
+        "story_or_meaning": "Earring or Umbrella. Ruled by Indra (Chief of the Gods). The power to rise or conquer; achieving seniority and authority. ",
+        "object_type": "Nakshatra (Lunar Mansion)",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Sagittarius",
+        "culture": "Vedic (Hindu)",
+        "indigenous_name": "Mula",
+        "story_or_meaning": "Bunch of roots. Ruled by Nirriti (Goddess of Dissolution). The power to ruin or destroy; getting to the root of matters. ",
+        "object_type": "Nakshatra (Lunar Mansion)",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Sagittarius",
+        "culture": "Vedic (Hindu)",
+        "indigenous_name": "Purva Ashadha",
+        "story_or_meaning": "Elephant Tusk or Fan. Ruled by Apas (God of Water). The power to invigorate or energize; purification and renewal. ",
+        "object_type": "Nakshatra (Lunar Mansion)",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Sagittarius",
+        "culture": "Vedic (Hindu)",
+        "indigenous_name": "Uttara Ashadha",
+        "story_or_meaning": "Elephant Tusk or Small Bed. Ruled by Visvedevas (The Universal Gods). The power for an unchallengeable victory; lasting success. ",
+        "object_type": "Nakshatra (Lunar Mansion)",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Aquila (Altair)",
+        "culture": "Vedic (Hindu)",
+        "indigenous_name": "Shravana",
+        "story_or_meaning": "Ear or Three Footprints. Ruled by Vishnu (The Preserver). The power to connect; listening, learning, and tradition. ",
+        "object_type": "Nakshatra (Lunar Mansion)",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Delphinus",
+        "culture": "Vedic (Hindu)",
+        "indigenous_name": "Dhanishtha",
+        "story_or_meaning": "Drum or Flute. Ruled by The Eight Vasus (Deities of Abundance). The power to give fame and abundance; rhythm and wealth. ",
+        "object_type": "Nakshatra (Lunar Mansion)",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Aquarius",
+        "culture": "Vedic (Hindu)",
+        "indigenous_name": "Shatabhishak",
+        "story_or_meaning": "Empty Circle or 100 Flowers. Ruled by Varuna (God of the Cosmic Waters). The power of healing; veiling secrets and contemplative insight. ",
+        "object_type": "Nakshatra (Lunar Mansion)",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Pegasus",
+        "culture": "Vedic (Hindu)",
+        "indigenous_name": "Purva Bhadrapada",
+        "story_or_meaning": "Swords or Two front legs of a funeral cot. Ruled by Aja Ekapada (One-footed Goat/Serpent). The power to raise a person up in life; spiritual fire and transformation. ",
+        "object_type": "Nakshatra (Lunar Mansion)",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Pegasus/Andromeda",
+        "culture": "Vedic (Hindu)",
+        "indigenous_name": "Uttara Bhadrapada",
+        "story_or_meaning": "Back legs of a funeral cot. Ruled by Ahir Budhnya (Serpent of the Deep). The power to bring rain; wisdom and discipline. ",
+        "object_type": "Nakshatra (Lunar Mansion)",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Pisces",
+        "culture": "Vedic (Hindu)",
+        "indigenous_name": "Revati",
+        "story_or_meaning": "Fish or a Drum. Ruled by Pushan (The Nourisher). The power of nourishment; providing protection and safe travels. ",
+        "object_type": "Nakshatra (Lunar Mansion)",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Dark Lanes in Milky Way",
+        "culture": "Aboriginal Australian (Wiradjuri/Gamilaroi)",
+        "indigenous_name": "Gugurmin",
+        "story_or_meaning": "The Emu in the Sky. Its position is a calendar indicating when to hunt emus and collect their eggs. ",
+        "object_type": "Dark Constellation",
+        "constellation_type": "Dark"
+      },
+      {
+        "western_name": "Coalsack Nebula",
+        "culture": "Aboriginal Australian (Boorong)",
+        "indigenous_name": "Tchingal",
+        "story_or_meaning": "An evil emu that terrorized people. The head of the larger Emu in the Sky constellation. ",
+        "object_type": "Dark Constellation",
+        "constellation_type": "Dark"
+      },
+      {
+        "western_name": "Pleiades",
+        "culture": "Aboriginal Australian (Many Groups)",
+        "indigenous_name": "Seven Sisters (Yugarilya)",
+        "story_or_meaning": "Seven sisters fleeing from a lustful hunter (Orion). The story teaches kinship laws and social rules. [7, 8, 9]",
+        "object_type": "Asterism",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Orion",
+        "culture": "Aboriginal Australian (Kokatha/Wirangu)",
+        "indigenous_name": "Nyeeruna / Tgilby",
+        "story_or_meaning": "A hunter who pursues the Seven Sisters (Pleiades). His 'fire-magic' hand (Betelgeuse) varies in brightness, reflecting the star's actual variability. [7, 8, 10]",
+        "object_type": "Constellation",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Orion",
+        "culture": "Aboriginal Australian (Yolŋu)",
+        "indigenous_name": "Julpan",
+        "story_or_meaning": "A canoe carrying three brothers (Orion's Belt). It also transports souls to the afterlife. The Orion Nebula is a forbidden fish they caught. [7, 9]",
+        "object_type": "Constellation",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Orion's Belt & Sword",
+        "culture": "Aboriginal Australian (Boorong)",
+        "indigenous_name": "Kulkunbulla",
+        "story_or_meaning": "Two young dancing men, representing the importance of song and dance in cultural transmission. [11]",
+        "object_type": "Asterism",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Southern Cross",
+        "culture": "Aboriginal Australian (Boorong)",
+        "indigenous_name": "Bunya",
+        "story_or_meaning": "A possum hiding in a tree. ",
+        "object_type": "Constellation",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Southern Cross",
+        "culture": "Aboriginal Australian (Arrernte)",
+        "indigenous_name": "Wedge-tailed Eagle",
+        "story_or_meaning": "A powerful creator spirit. [8]",
+        "object_type": "Constellation",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Sirius",
+        "culture": "Aboriginal Australian (Boorong)",
+        "indigenous_name": "Warepil",
+        "story_or_meaning": "The male wedge-tailed eagle, chief of the creator elders. His wings spread out to either side of the star. ",
+        "object_type": "Star",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Gemini (Castor & Pollux)",
+        "culture": "Aboriginal Australian (Boorong)",
+        "indigenous_name": "Yurree & Wanjel",
+        "story_or_meaning": "Two hunters (a fan-tailed cuckoo and a long-necked tortoise). Their appearance signals seasonal patterns for these animals. ",
+        "object_type": "Constellation",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Vega",
+        "culture": "Aboriginal Australian (Boorong)",
+        "indigenous_name": "Neilloan",
+        "story_or_meaning": "The Mallee fowl. Its appearance in the autumn morning sky signals that the birds are building their nests. ",
+        "object_type": "Star",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Altair",
+        "culture": "Aboriginal Australian (Boon Wurrung/Wurundjeri)",
+        "indigenous_name": "Bunjil",
+        "story_or_meaning": "The eagle creator being, flanked by his two black swan wives (the stars Tarazed and Alshain). ",
+        "object_type": "Star",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Magellanic Clouds",
+        "culture": "Aboriginal Australian (Boorong)",
+        "indigenous_name": "Brolga's Eggs",
+        "story_or_meaning": "The eggs of the Brolga, a type of crane. [11]",
+        "object_type": "Galaxy",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Ursa Major",
+        "culture": "Norse/Viking",
+        "indigenous_name": "Karlsvagn / Óðins vagn",
+        "story_or_meaning": "Man's Chariot / Odin's Wagon. Associated with both Thor's and Odin's celestial chariots. [12, 13, 14, 15]",
+        "object_type": "Constellation",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Ursa Minor",
+        "culture": "Norse/Viking",
+        "indigenous_name": "Kvennavagn",
+        "story_or_meaning": "Woman's Chariot. Believed to be the chariot of the goddess Freyja. [12, 16, 17]",
+        "object_type": "Constellation",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Orion's Belt",
+        "culture": "Norse/Viking",
+        "indigenous_name": "Friggjarrokkr",
+        "story_or_meaning": "Frigga's Distaff. The spinning tool of the goddess Frigg, wife of Odin. ",
+        "object_type": "Asterism",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Orion's Belt",
+        "culture": "Norse/Viking",
+        "indigenous_name": "Fiskikarlar",
+        "story_or_meaning": "Fishermen. An alternative name, possibly referring to the three stars as fishermen in a line. [16, 17, 18]",
+        "object_type": "Asterism",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Gemini (Castor & Pollux)",
+        "culture": "Norse/Viking",
+        "indigenous_name": "Auguthjaza",
+        "story_or_meaning": "Eyes of Þjazi. The eyes of the giant Þjazi, which Odin placed in the sky as stars after the giant was killed. ",
+        "object_type": "Constellation",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Hyades (in Taurus)",
+        "culture": "Norse/Viking",
+        "indigenous_name": "Ulf's Keptr",
+        "story_or_meaning": "Mouth of the Wolf. The mouth of one of the mythological wolves (Sköll or Hati) that hunt the Sun and Moon. [16, 17, 18]",
+        "object_type": "Asterism",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Corona Borealis",
+        "culture": "Norse/Viking",
+        "indigenous_name": "Aurvandil's toe",
+        "story_or_meaning": "The frozen toe of a man named Aurvandil, which Thor broke off and threw into the sky to become a star. [16, 17]",
+        "object_type": "Constellation",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Polaris",
+        "culture": "Norse/Viking",
+        "indigenous_name": "Leiðarstjarna",
+        "story_or_meaning": "Guiding Star. The primary star used for navigation at sea. ",
+        "object_type": "Star",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Arcturus",
+        "culture": "Norse/Viking",
+        "indigenous_name": "Dagstjarna",
+        "story_or_meaning": "Day Star. A bright star used to anticipate sunrise in the spring at high northern latitudes. [16, 19]",
+        "object_type": "Star",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Vega",
+        "culture": "Norse/Viking",
+        "indigenous_name": "Suðrstjarna",
+        "story_or_meaning": "South Star. A bright star marking the southern sky in summer. ",
+        "object_type": "Star",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Milky Way",
+        "culture": "Norse/Viking",
+        "indigenous_name": "Bifröst",
+        "story_or_meaning": "The Shimmering Path. The burning rainbow bridge connecting Midgard (Earth) to Asgard (the realm of the gods). ",
+        "object_type": "Galaxy Feature",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Orion",
+        "culture": "Maya",
+        "indigenous_name": "Ak' / Oxib Xkub'",
+        "story_or_meaning": "A turtle, or the Three Hearthstones of Creation, with the Orion Nebula as the cosmic fire at the center of creation. [20, 21]",
+        "object_type": "Constellation",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Pleiades",
+        "culture": "Maya",
+        "indigenous_name": "Tz'ab",
+        "story_or_meaning": "The rattle of a rattlesnake's tail. [21]",
+        "object_type": "Asterism",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Gemini",
+        "culture": "Maya",
+        "indigenous_name": "Copulating Peccaries",
+        "story_or_meaning": "A pair of copulating peccaries (wild pigs). [20, 21]",
+        "object_type": "Constellation",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Ursa Major (Big Dipper)",
+        "culture": "Maya",
+        "indigenous_name": "Seven Macaw",
+        "story_or_meaning": "A boastful mythical parrot from the Popol Vuh creation story, who was taught a lesson by the Hero Twins. ",
+        "object_type": "Asterism",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Milky Way",
+        "culture": "Maya",
+        "indigenous_name": "Wacah Chan",
+        "story_or_meaning": "The World Tree, the central axis of the cosmos. [20]",
+        "object_type": "Galaxy Feature",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Orion's Belt & Sword",
+        "culture": "Aztec",
+        "indigenous_name": "Mamalhuaztli",
+        "story_or_meaning": "The Fire Drill. The sacred tool used to kindle the new fire every 52 years to postpone the end of the world. ",
+        "object_type": "Asterism",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Pleiades",
+        "culture": "Aztec",
+        "indigenous_name": "Tianquiztli",
+        "story_or_meaning": "The Marketplace. Its midnight zenith passage every 52 years was the signal for the New Fire Ceremony to ensure the world would not end. ",
+        "object_type": "Asterism",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Scorpius",
+        "culture": "Aztec",
+        "indigenous_name": "Colotl",
+        "story_or_meaning": "A scorpion or rattlesnake, an animal of sacred significance. [22, 23]",
+        "object_type": "Constellation",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Gemini",
+        "culture": "Aztec",
+        "indigenous_name": "Ballcourt / Frog",
+        "story_or_meaning": "A ceremonial Ballcourt, or a Frog associated with prayers for rain during a devastating drought. [24, 22, 23]",
+        "object_type": "Constellation",
+        "constellation_type": "Light"
+      },
+      {
+        "western_name": "Dark Rift in Milky Way (Centaurus/Crux)",
+        "culture": "Inca",
+        "indigenous_name": "Yacana",
+        "story_or_meaning": "The Great Llama, with a baby llama (Uñallamacha). Its eyes are Alpha and Beta Centauri. It protects all llamas on Earth and drinks the cosmic river to prevent a world-ending flood. ",
+        "object_type": "Dark Constellation",
+        "constellation_type": "Dark"
+      },
+      {
+        "western_name": "Dark Rift in Milky Way (Scorpius/Sagittarius)",
+        "culture": "Inca",
+        "indigenous_name": "Atoq",
+        "story_or_meaning": "The Fox, which chases the baby llama. Its appearance coincides with the birth season of terrestrial foxes. ",
+        "object_type": "Dark Constellation",
+        "constellation_type": "Dark"
+      },
+      {
+        "western_name": "Coalsack Nebula",
+        "culture": "Inca",
+        "indigenous_name": "Yutu",
+        "story_or_meaning": "The Tinamou (a partridge-like bird). Its position was used to time the potato harvest. ",
+        "object_type": "Dark Constellation",
+        "constellation_type": "Dark"
+      },
+      {
+        "western_name": "Dark Rift in Milky Way",
+        "culture": "Inca",
+        "indigenous_name": "Mach'acuay",
+        "story_or_meaning": "The Serpent. Its celestial cycle matches the active season of real snakes in the Andes. Represents the underworld. ",
+        "object_type": "Dark Constellation",
+        "constellation_type": "Dark"
+      },
+      {
+        "western_name": "Southern Cross",
+        "culture": "Inca",
+        "indigenous_name": "Chakana",
+        "story_or_meaning": "A powerful symbol in Andean cosmology, representing the three levels of existence (upper world, human world, underworld). ",
+        "object_type": "Constellation",
+        "constellation_type": "Light"
+      }
+    ]
+  }

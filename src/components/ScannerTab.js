@@ -10,16 +10,16 @@ import {
   Alert,
   Animated,
 } from 'react-native';
-import { ARStarOverlay } from './ARStarOverlay';
+import ARCoreView from './ARCoreView';
 import { OrientationTest } from './OrientationTest';
 import { PhotoCapture } from './PhotoCapture';
 import { Ionicons } from '@expo/vector-icons';
+import theme from '../styles/theme';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 export const ScannerTab = ({ location, onPhotoCapture }) => {
   const [arMode, setArMode] = useState(true);
-  const [cameraMode, setCameraMode] = useState(true);
   const [testMode, setTestMode] = useState(false);
   const [showPhotoCapture, setShowPhotoCapture] = useState(false);
   const [selectedConstellationForPhoto, setSelectedConstellationForPhoto] = useState(null);
@@ -49,40 +49,27 @@ export const ScannerTab = ({ location, onPhotoCapture }) => {
   }, []);
 
   const handlePhotoCapture = (constellation) => {
+    console.log('📸 ScannerTab handlePhotoCapture called with:', constellation);
+    console.log('📸 Current showPhotoCapture state:', showPhotoCapture);
     setSelectedConstellationForPhoto(constellation);
     setShowPhotoCapture(true);
+    console.log('📸 PhotoCapture modal should now be visible');
   };
 
   return (
     <View style={styles.container}>
-      {/* AR Star Overlay */}
-      {!testMode && arMode && cameraMode && location && (
-        <ARStarOverlay
-          location={location}
-          cameraMode={cameraMode}
-          showDaytimeOverlay={true}
-        />
+      {/* AR Core View - Full Screen Stars with Camera Toggle */}
+      {!testMode && arMode && location && (
+        <>
+          {console.log('🔄 Rendering ARCoreView with conditions:', { testMode, arMode, location: !!location })}
+          <ARCoreView onPhotoCapture={handlePhotoCapture} />
+        </>
       )}
 
       {/* Orientation Test Mode */}
       {testMode && location && (
         <OrientationTest location={location} />
       )}
-
-      {/* Snapchat-style Capture Button */}
-      <TouchableOpacity
-        style={styles.snapchatCaptureButton}
-        onPress={() => {
-          // For now, just show the photo capture modal
-          // In a real implementation, this would detect the constellation being viewed
-          setSelectedConstellationForPhoto(null);
-          setShowPhotoCapture(true);
-        }}
-      >
-        <View style={styles.captureButtonOuter}>
-          <View style={styles.captureButtonInner} />
-        </View>
-      </TouchableOpacity>
 
       {/* Mode Toggle Buttons */}
       <View style={styles.modeToggleContainer}>
@@ -93,7 +80,7 @@ export const ScannerTab = ({ location, onPhotoCapture }) => {
             setTestMode(false);
           }}
         >
-          <Ionicons name="camera" size={20} color={arMode ? "#FFD700" : "#FFFFFF"} />
+          <Ionicons name="camera" size={20} color={arMode ? theme.colors.primary : theme.colors.textPrimary} />
           <Text style={[styles.modeButtonText, arMode && styles.activeModeButtonText]}>
             AR
           </Text>
@@ -106,7 +93,7 @@ export const ScannerTab = ({ location, onPhotoCapture }) => {
             setArMode(false);
           }}
         >
-          <Ionicons name="compass" size={20} color={testMode ? "#FFD700" : "#FFFFFF"} />
+          <Ionicons name="compass" size={20} color={testMode ? theme.colors.primary : theme.colors.textPrimary} />
           <Text style={[styles.modeButtonText, testMode && styles.activeModeButtonText]}>
             Test
           </Text>
@@ -127,66 +114,42 @@ export const ScannerTab = ({ location, onPhotoCapture }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'transparent',
-  },
-  snapchatCaptureButton: {
-    position: 'absolute',
-    bottom: 100,
-    left: '50%',
-    marginLeft: -35,
-    zIndex: 10,
-  },
-  captureButtonOuter: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
-    borderColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  captureButtonInner: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.black,
   },
   modeToggleContainer: {
     position: 'absolute',
     top: 50,
     right: 20,
     flexDirection: 'row',
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    borderRadius: 20,
-    padding: 5,
+    backgroundColor: theme.colors.overlayDark,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.sm,
+    zIndex: 1000,
+    borderWidth: 1,
+    borderColor: theme.colors.cardBorder,
+    ...theme.shadows.medium,
   },
   modeButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 15,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.sm,
+    borderRadius: theme.borderRadius.md,
   },
   activeModeButton: {
-    backgroundColor: 'rgba(255, 215, 0, 0.2)',
+    backgroundColor: theme.colors.cardBackground,
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
   },
   modeButtonText: {
-    color: '#FFFFFF',
-    marginLeft: 5,
-    fontSize: 14,
-    fontWeight: '600',
+    color: theme.colors.textPrimary,
+    marginLeft: theme.spacing.sm,
+    fontSize: theme.typography.caption,
+    fontWeight: theme.typography.semibold,
+    fontFamily: theme.typography.fontFamily,
   },
   activeModeButtonText: {
-    color: '#FFD700',
-    fontWeight: 'bold',
+    color: theme.colors.primary,
+    fontWeight: theme.typography.bold,
   },
 });

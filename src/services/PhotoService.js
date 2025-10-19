@@ -125,7 +125,7 @@ export class PhotoService {
           storage_path: uploadData.path,
           latitude: photoData.latitude,
           longitude: photoData.longitude,
-          constellation: photoData.constellation || [], // Ensure it's an array
+          // constellation: photoData.constellation || [], // Temporarily disabled until DB migration
           light_rating: photoData.lightRating,
           taken_at: photoData.takenAt?.toISOString() || new Date().toISOString(),
         })

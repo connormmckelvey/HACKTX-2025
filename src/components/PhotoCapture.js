@@ -21,12 +21,14 @@ const { height: screenHeight } = Dimensions.get('window');
 export const PhotoCapture = ({ visible, onClose, constellation, location }) => {
   const { user } = useAuth();
   const [cameraRef, setCameraRef] = useState(null);
+  const isMountedRef = useRef(true);
   const [capturing, setCapturing] = useState(false);
   const [lightRating, setLightRating] = useState(3);
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [capturedPhotoUri, setCapturedPhotoUri] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [photoFrozen, setPhotoFrozen] = useState(false);
+  const [cameraReady, setCameraReady] = useState(false);
 
   // Animation values
   const dropdownAnim = useRef(new Animated.Value(-screenHeight * 0.75)).current;
@@ -41,21 +43,75 @@ export const PhotoCapture = ({ visible, onClose, constellation, location }) => {
     }
   }, [visible, permission]);
 
+  // Cleanup effect to reset state when modal closes
+  React.useEffect(() => {
+    console.log('🔄 PhotoCapture modal visibility changed:', visible);
+    if (!visible) {
+      console.log('🔄 Modal closed, resetting states');
+      // Reset all states when modal is closed
+      setCapturing(false);
+      setCapturedPhotoUri(null);
+      setShowDropdown(false);
+      setPhotoFrozen(false);
+      setCameraRef(null);
+      setCameraReady(false);
+    } else {
+      console.log('🔄 Modal opened, initializing camera');
+    }
+  }, [visible]);
+
+  // Cleanup on unmount
+  React.useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   const takePicture = async () => {
-    if (!cameraRef) {
-      console.error('Camera ref is null');
+    console.log('📸 CAPTURE BUTTON PRESSED!', {
+      cameraRef: !!cameraRef,
+      visible: visible,
+      cameraReady: cameraReady,
+      capturing: capturing,
+      photoFrozen: photoFrozen,
+      isMounted: isMountedRef.current
+    });
+    
+    if (!cameraRef || !visible || !cameraReady) {
+      console.log('❌ Camera not ready - ref:', !!cameraRef, 'visible:', visible, 'ready:', cameraReady);
+      return;
+    }
+
+    if (!isMountedRef.current) {
+      console.log('❌ Component unmounted, cannot take picture');
       return;
     }
 
     try {
       console.log('=== TAKING PICTURE ===');
       console.log('Camera ref exists:', !!cameraRef);
+      console.log('Modal visible:', visible);
       setCapturing(true);
+
+      // Add a small delay to ensure camera is ready
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Check if camera ref is still valid
+      if (!cameraRef || !visible || !isMountedRef.current) {
+        console.error('Camera ref became null, modal closed, or component unmounted during preparation');
+        return;
+      }
 
       const photo = await cameraRef.takePictureAsync({
         quality: 0.8,
         base64: false,
       });
+
+      // Check if modal is still visible and component is mounted after photo capture
+      if (!visible || !isMountedRef.current) {
+        console.log('Modal closed or component unmounted during photo capture, discarding photo');
+        return;
+      }
 
       console.log('Photo taken successfully:', photo.uri);
       setCapturedPhotoUri(photo.uri);
@@ -72,8 +128,15 @@ export const PhotoCapture = ({ visible, onClose, constellation, location }) => {
 
       console.log('=== PICTURE TAKEN SUCCESSFULLY ===');
     } catch (error) {
+      // Check if it's the unmounted error specifically first
+      if (error.message && error.message.includes('unmounted')) {
+        console.log('Camera was unmounted during photo capture - this is expected if modal was closed');
+        return; // Don't show error alert for this case
+      }
+      
+      // Only log as error if it's not an expected unmounted error
       console.error('Error taking picture:', error);
-      Alert.alert('Error', 'Failed to take picture');
+      Alert.alert('Error', 'Failed to take picture. Please try again.');
     } finally {
       setCapturing(false);
     }
@@ -192,6 +255,10 @@ export const PhotoCapture = ({ visible, onClose, constellation, location }) => {
             style={styles.camera}
             facing="back"
             ref={(ref) => setCameraRef(ref)}
+            onCameraReady={() => {
+              console.log('Camera is ready');
+              setCameraReady(true);
+            }}
           />
         )}
 
@@ -211,9 +278,9 @@ export const PhotoCapture = ({ visible, onClose, constellation, location }) => {
           {!photoFrozen && (
             <View style={styles.captureContainer}>
               <TouchableOpacity
-                style={[styles.captureButton, capturing && styles.captureButtonDisabled]}
+                style={[styles.captureButton, (capturing || !cameraReady) && styles.captureButtonDisabled]}
                 onPress={takePicture}
-                disabled={capturing}
+                disabled={capturing || !cameraReady}
               >
                 {capturing ? (
                   <ActivityIndicator color="#fff" />
@@ -311,6 +378,7 @@ const styles = StyleSheet.create({
   cameraOverlay: {
     flex: 1,
     backgroundColor: 'transparent',
+    zIndex: 100, // Ensure overlay is above camera but below buttons
   },
   header: {
     position: 'absolute',
@@ -350,16 +418,26 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     alignItems: 'center',
+    zIndex: 1000, // Ensure it's above other elements
   },
   captureButton: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)', // More opaque for better visibility
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 3,
-    borderColor: '#fff',
+    borderWidth: 4, // Thicker border
+    borderColor: '#FFD700', // Gold color for better visibility
+    zIndex: 1001, // Even higher than container
+    elevation: 10, // For Android
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
   },
   captureButtonDisabled: {
     opacity: 0.5,
@@ -368,7 +446,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#fff',
+    backgroundColor: '#FFD700', // Gold color to match border
   },
   infoContainer: {
     position: 'absolute',
@@ -510,6 +588,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
+    zIndex: 500, // Lower than capture button but above camera
   },
   dropdownHandle: {
     width: 40,

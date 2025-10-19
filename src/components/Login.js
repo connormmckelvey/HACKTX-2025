@@ -102,7 +102,12 @@ export const Login = () => {
         });
 
         if (error) {
-          setError(error.message);
+          // Handle specific error cases with better messaging
+          if (error.code === 'EMAIL_NOT_CONFIRMED') {
+            setError('Account created! Please check your email and click the confirmation link, then sign in manually.');
+          } else {
+            setError(error.message);
+          }
         } else {
           setError('Account created successfully!');
           setTimeout(() => {
@@ -212,8 +217,34 @@ export const Login = () => {
 
           {/* Error/Success Display */}
           {error ? (
-            <View style={[styles.errorContainer, error.includes('successfully') && styles.successContainer]}>
-              <Text style={[styles.errorText, error.includes('successfully') && styles.successText]}>{error}</Text>
+            <View style={[
+              styles.errorContainer, 
+              error.includes('successfully') && styles.successContainer,
+              error.includes('check your email') && styles.infoContainer
+            ]}>
+              <Text style={[
+                styles.errorText, 
+                error.includes('successfully') && styles.successText,
+                error.includes('check your email') && styles.infoText
+              ]}>
+                {error}
+              </Text>
+              {error.includes('check your email') && (
+                <>
+                  <Text style={styles.infoSubtext}>
+                    After confirming your email, you can sign in below.
+                  </Text>
+                  <TouchableOpacity 
+                    style={styles.switchToLoginButton}
+                    onPress={() => {
+                      setIsSignUp(false);
+                      setError('');
+                    }}
+                  >
+                    <Text style={styles.switchToLoginText}>Switch to Sign In</Text>
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
           ) : null}
 
@@ -401,6 +432,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 255, 0, 0.1)',
     borderColor: '#44ff44',
   },
+  infoContainer: {
+    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    borderColor: '#FFD700',
+  },
   errorText: {
     color: '#ff4444',
     fontSize: 14,
@@ -408,6 +443,34 @@ const styles = StyleSheet.create({
   },
   successText: {
     color: '#44ff44',
+  },
+  infoText: {
+    color: '#FFD700',
+    fontSize: 14,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  infoSubtext: {
+    color: '#FFD700',
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 4,
+    opacity: 0.8,
+  },
+  switchToLoginButton: {
+    backgroundColor: 'rgba(255, 215, 0, 0.2)',
+    borderColor: '#FFD700',
+    borderWidth: 1,
+    borderRadius: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginTop: 8,
+    alignSelf: 'center',
+  },
+  switchToLoginText: {
+    color: '#FFD700',
+    fontSize: 12,
+    fontWeight: '500',
   },
   input: {
     width: '100%',

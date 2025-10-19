@@ -102,11 +102,14 @@ export const Login = () => {
         });
 
         if (error) {
+          console.log('🚀 Login signup error:', error);
           // Handle specific error cases with better messaging
           if (error.code === 'EMAIL_NOT_CONFIRMED') {
+            console.log('🚀 Setting email confirmation message');
             setError('✅ Account created! Please check your email and click the confirmation link, then sign in below.');
             // Switch to sign in mode after showing the message
             setTimeout(() => {
+              console.log('🚀 Auto-switching to sign in mode');
               setIsSignUp(false);
               setError('');
             }, 3000);
@@ -114,6 +117,7 @@ export const Login = () => {
             setError(error.message);
           }
         } else {
+          console.log('🚀 Login signup success');
           setError('✅ Account created successfully!');
           setTimeout(() => {
             setIsSignUp(false);

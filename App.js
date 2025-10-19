@@ -33,6 +33,7 @@ import { ScannerTab } from './src/components/ScannerTab';
 import { CultureTab } from './src/components/CultureTab';
 import { CollectionTab } from './src/components/CollectionTab';
 import { SkyMapTab } from './src/components/SkyMapTab';
+import { supabase } from './src/config/supabase';
 import { ProfileTab } from './src/components/ProfileTab';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -216,7 +217,40 @@ function AppContent() {
   }
 
   // If user exists but no profile after loading is complete, show login
+  // BUT: If this is a new signup (user just created), show a message instead of redirecting
   if (user && !profile && !loading) {
+    // Check if this is a new user (created recently)
+    const userCreatedAt = new Date(user.created_at);
+    const now = new Date();
+    const timeSinceCreation = now - userCreatedAt;
+    const isNewUser = timeSinceCreation < 30000; // 30 seconds
+    
+    if (isNewUser && !user.email_confirmed_at) {
+      // This is a new signup that needs email confirmation
+      return (
+        <View style={styles.container}>
+          <StatusBar barStyle="light-content" backgroundColor="#0c1445" />
+          <View style={styles.loadingContainer}>
+            <Text style={styles.starSymbol}>✨</Text>
+            <Text style={styles.loadingText}>✅ Account created!</Text>
+            <Text style={styles.emailConfirmationText}>
+              Please check your email and click the confirmation link, then sign in below.
+            </Text>
+            <TouchableOpacity 
+              style={styles.signInButton}
+              onPress={() => {
+                // Sign out the user so they can sign in after confirming email
+                supabase.auth.signOut();
+              }}
+            >
+              <Text style={styles.signInButtonText}>Sign In</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      );
+    }
+    
+    // Otherwise, show login for existing users without profiles
     return <Login />;
   }
 
@@ -705,6 +739,29 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 20,
     fontFamily: Platform.OS === 'ios' ? 'Avenir Next' : 'Roboto',
+  },
+  emailConfirmationText: {
+    color: '#FFD700',
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 20,
+    marginBottom: 30,
+    paddingHorizontal: 20,
+    lineHeight: 24,
+  },
+  signInButton: {
+    backgroundColor: 'rgba(255, 215, 0, 0.2)',
+    borderColor: '#FFD700',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+  },
+  signInButtonText: {
+    color: '#FFD700',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

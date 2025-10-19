@@ -21,14 +21,20 @@ interface StargazerViewProps {
   onError?: (error: string) => void;
   observerData: ObserverData;
   blackBackgroundEnabled?: boolean;
+  cameraEnabled?: boolean;
   onBlackBackgroundToggle?: () => void;
+  onSensorDataUpdate?: (data: { pitch: number; roll: number; yaw: number }) => void;
+  onDeviceQuaternionUpdate?: (quaternion: any) => void;
 }
 
 export const StargazerView: React.FC<StargazerViewProps> = ({ 
   onError, 
   observerData, 
   blackBackgroundEnabled = false,
-  onBlackBackgroundToggle 
+  cameraEnabled = false,
+  onBlackBackgroundToggle,
+  onSensorDataUpdate,
+  onDeviceQuaternionUpdate
 }) => {
   // Calculate sky orientation once at startup
   const skyOrientation = useMemo(() => {
@@ -62,7 +68,11 @@ export const StargazerView: React.FC<StargazerViewProps> = ({
   // Handle sensor data updates from Scene component
   const handleSensorDataUpdate = React.useCallback((data: { pitch: number; roll: number; yaw: number }) => {
     setSensorData(data);
-  }, []);
+    // Pass the data up to parent component for constellation detection
+    if (onSensorDataUpdate) {
+      onSensorDataUpdate(data);
+    }
+  }, [onSensorDataUpdate]);
 
   // Star interaction state
   const [starNameDisplay, setStarNameDisplay] = useState<StarNameDisplay | null>(null);
@@ -129,8 +139,9 @@ export const StargazerView: React.FC<StargazerViewProps> = ({
       {/* 3D Scene with react-three-fiber (native Canvas) */}
       <Canvas
         style={styles.glView}
-        onCreated={() => {
+        onCreated={({ gl, scene }) => {
           log('--- R3F CANVAS CREATED ---');
+          // Don't set any background - let camera show through
         }}
         gl={{ antialias: true }}
       >
@@ -138,6 +149,7 @@ export const StargazerView: React.FC<StargazerViewProps> = ({
           skyOrientation={skyOrientation}
           rotationSensor={rotationSensor}
           onSensorDataUpdate={handleSensorDataUpdate}
+          onDeviceQuaternionUpdate={onDeviceQuaternionUpdate}
         />
       </Canvas>
 
@@ -199,12 +211,18 @@ export const StargazerView: React.FC<StargazerViewProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: 'transparent', // Ensure completely transparent
+    zIndex: 1, // Keep this higher than camera
+  },
+  blackBackground: {
+    backgroundColor: '#000000',
+  },
+  transparentBackground: {
     backgroundColor: 'transparent',
-    zIndex: 1,
   },
   glView: {
     flex: 1,
-    backgroundColor: 'transparent',
+    backgroundColor: 'transparent', // Ensure 3D scene is transparent
   },
   overlay: {
     position: 'absolute',

@@ -19,9 +19,10 @@ interface SceneComponentProps {
   skyOrientation: SkyOrientation;
   rotationSensor: AnimatedSensor<Value3D>; // Sensor object passed from parent
   onSensorDataUpdate?: (data: { pitch: number; roll: number; yaw: number }) => void;
+  onDeviceQuaternionUpdate?: (quaternion: Quaternion) => void;
 }
 
-const Scene: React.FC<SceneComponentProps> = ({ skyOrientation, rotationSensor, onSensorDataUpdate }) => {
+const Scene: React.FC<SceneComponentProps> = ({ skyOrientation, rotationSensor, onSensorDataUpdate, onDeviceQuaternionUpdate }) => {
   const cameraRef = useRef<ThreePerspectiveCamera>(null);
   
   // Store the accumulated device rotation in a ref so it persists between frames
@@ -51,6 +52,11 @@ const Scene: React.FC<SceneComponentProps> = ({ skyOrientation, rotationSensor, 
           const yaw = Math.atan2(vx, vy);
           
           onSensorDataUpdate({ pitch, roll, yaw });
+        }
+
+        // Send device quaternion to parent for constellation detection
+        if (onDeviceQuaternionUpdate) {
+          onDeviceQuaternionUpdate(deviceQuaternionRef.current.clone());
         }
 
         const axis = new Vector3(vx, vy, vz);

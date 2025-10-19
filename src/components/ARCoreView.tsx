@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { View, TouchableOpacity, StyleSheet, Dimensions, Text, Modal, Alert } from 'react-native';
-import { CameraView } from 'expo-camera';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { StargazerView } from '../core/components/StargazerView';
 import { getObserverData, ObserverData } from '../core/utils/observer';
 import { debugLog } from '../config/debug';
@@ -21,53 +21,94 @@ export default function ARCoreView({ onPhotoCapture }: ARCoreViewProps) {
   const [cameraEnabled, setCameraEnabled] = useState(false);
   const cameraRef = useRef<CameraView>(null);
   
+  // Camera permissions
+  const [permission, requestPermission] = useCameraPermissions();
+  
   // Constellation detection state
   const [detectedConstellation, setDetectedConstellation] = useState<string>('');
   const [constellationConfidence, setConstellationConfidence] = useState(0);
   const [showCulturalInfo, setShowCulturalInfo] = useState(false);
   const [selectedCulture, setSelectedCulture] = useState<string>('');
+  const [deviceQuaternion, setDeviceQuaternion] = useState<Quaternion>(new Quaternion());
   
   console.log('🔄 ARCoreView initialized with onPhotoCapture:', typeof onPhotoCapture, !!onPhotoCapture);
   
   useEffect(() => { 
     getObserverData().then(setObserver); 
   }, []);
+
+  // Debug camera state changes
+  useEffect(() => {
+    console.log('📷 Camera state changed:', cameraEnabled);
+  }, [cameraEnabled]);
+
+  // Debug camera permissions
+  useEffect(() => {
+    console.log('📷 Camera permission:', permission);
+  }, [permission]);
   
-  // Constellation detection function
+  // Handle sensor data updates from StargazerView (for debug display)
+  const handleSensorDataUpdate = React.useCallback((data: { pitch: number; roll: number; yaw: number }) => {
+    // This is just for debug display - constellation detection uses quaternion directly
+    console.log('Sensor data:', data);
+  }, []);
+
+  // Handle device quaternion updates for constellation detection
+  const handleDeviceQuaternionUpdate = React.useCallback((quaternion: Quaternion) => {
+    setDeviceQuaternion(quaternion);
+    
+    // Detect constellation based on current device orientation
+    if (observer) {
+      const detectionResult = detectConstellation(quaternion, observer);
+      if (detectionResult.constellation) {
+        setDetectedConstellation(detectionResult.constellation.name);
+        setConstellationConfidence(detectionResult.confidence);
+      } else {
+        setDetectedConstellation('');
+        setConstellationConfidence(0);
+      }
+    }
+  }, [observer]);
+
+  // Constellation detection function (for manual trigger)
   const detectCurrentConstellation = () => {
     if (!observer) return;
     
-    // For now, we'll use a simple approach - detect based on time and location
-    // In a real implementation, you'd use the device's gyroscope/accelerometer data
-    const currentHour = new Date().getHours();
-    const currentMonth = new Date().getMonth();
-    
-    // Simple constellation detection based on time of year and hour
-    let constellationName = '';
-    let confidence = 0.7; // Base confidence
-    
-    if (currentMonth >= 2 && currentMonth <= 4) { // Spring
-      if (currentHour >= 20 || currentHour <= 4) constellationName = 'Orion';
-      else if (currentHour >= 5 && currentHour <= 7) constellationName = 'Leo';
-      else constellationName = 'Ursa Major';
-    } else if (currentMonth >= 5 && currentMonth <= 7) { // Summer
-      if (currentHour >= 20 || currentHour <= 4) constellationName = 'Scorpius';
-      else if (currentHour >= 5 && currentHour <= 7) constellationName = 'Virgo';
-      else constellationName = 'Cygnus';
-    } else if (currentMonth >= 8 && currentMonth <= 10) { // Fall
-      if (currentHour >= 20 || currentHour <= 4) constellationName = 'Pegasus';
-      else if (currentHour >= 5 && currentHour <= 7) constellationName = 'Andromeda';
-      else constellationName = 'Cassiopeia';
-    } else { // Winter
-      if (currentHour >= 20 || currentHour <= 4) constellationName = 'Taurus';
-      else if (currentHour >= 5 && currentHour <= 7) constellationName = 'Gemini';
-      else constellationName = 'Orion';
+    const detectionResult = detectConstellation(deviceQuaternion, observer);
+    if (detectionResult.constellation) {
+      setDetectedConstellation(detectionResult.constellation.name);
+      setConstellationConfidence(detectionResult.confidence);
+    } else {
+      // Fallback to time-based detection if no constellation found
+      const currentHour = new Date().getHours();
+      const currentMonth = new Date().getMonth();
+      
+      let constellationName = '';
+      let confidence = 0.7;
+      
+      if (currentMonth >= 2 && currentMonth <= 4) { // Spring
+        if (currentHour >= 20 || currentHour <= 4) constellationName = 'Orion';
+        else if (currentHour >= 5 && currentHour <= 7) constellationName = 'Leo';
+        else constellationName = 'Ursa Major';
+      } else if (currentMonth >= 5 && currentMonth <= 7) { // Summer
+        if (currentHour >= 20 || currentHour <= 4) constellationName = 'Scorpius';
+        else if (currentHour >= 5 && currentHour <= 7) constellationName = 'Virgo';
+        else constellationName = 'Cygnus';
+      } else if (currentMonth >= 8 && currentMonth <= 10) { // Fall
+        if (currentHour >= 20 || currentHour <= 4) constellationName = 'Pegasus';
+        else if (currentHour >= 5 && currentHour <= 7) constellationName = 'Andromeda';
+        else constellationName = 'Cassiopeia';
+      } else { // Winter
+        if (currentHour >= 20 || currentHour <= 4) constellationName = 'Taurus';
+        else if (currentHour >= 5 && currentHour <= 7) constellationName = 'Gemini';
+        else constellationName = 'Orion';
+      }
+      
+      setDetectedConstellation(constellationName);
+      setConstellationConfidence(confidence);
     }
     
-    setDetectedConstellation(constellationName);
-    setConstellationConfidence(confidence);
-    
-    console.log('🔍 Constellation detected:', constellationName, 'confidence:', confidence);
+    console.log('🔍 Constellation detected:', detectedConstellation, 'confidence:', constellationConfidence);
   };
   
   // Handle constellation info button press
@@ -155,32 +196,71 @@ export default function ARCoreView({ onPhotoCapture }: ARCoreViewProps) {
   
   return (
     <View style={styles.container}>
-      {/* Camera Background - Only when camera is enabled */}
-      {cameraEnabled && (
-        <CameraView
-          ref={cameraRef}
-          style={styles.cameraBackground}
-          facing="back"
-          onCameraReady={() => debugLog('CAMERA_EVENTS', 'Camera ready')}
-        />
+      {/* Debug: Log what's being rendered */}
+      {console.log('📷 Rendering - cameraEnabled:', cameraEnabled)}
+      
+      {/* Camera Background - Only when camera is enabled AND permission granted */}
+      {cameraEnabled && permission?.granted && (
+        <>
+          {console.log('📷 Rendering CameraView component with permission')}
+          <CameraView
+            ref={cameraRef}
+            style={styles.cameraBackground}
+            facing="back"
+            onCameraReady={() => {
+              debugLog('CAMERA_EVENTS', 'Camera ready');
+              console.log('📷 Camera is ready and should be showing');
+            }}
+            onMountError={(error) => {
+              console.error('📷 Camera mount error:', error);
+            }}
+          />
+        </>
       )}
       
-      {/* Black Background - When camera is disabled */}
-      {!cameraEnabled && (
-        <View style={styles.blackBackground} />
+      {/* Black Background - When camera is disabled OR permission not granted */}
+      {(!cameraEnabled || !permission?.granted) && (
+        <>
+          {console.log('📷 Rendering black background - cameraEnabled:', cameraEnabled, 'permission granted:', permission?.granted)}
+          <View style={styles.blackBackground} />
+        </>
       )}
       
-      {/* AR Stargazer View - Always on top */}
+      {/* AR Stargazer View - Always on top, always transparent */}
       <StargazerView 
         observerData={observer} 
-        blackBackgroundEnabled={!cameraEnabled}
+        blackBackgroundEnabled={false}
+        cameraEnabled={cameraEnabled}
         onBlackBackgroundToggle={() => setCameraEnabled(!cameraEnabled)}
+        onSensorDataUpdate={handleSensorDataUpdate}
+        onDeviceQuaternionUpdate={handleDeviceQuaternionUpdate}
       />
       
       {/* Camera Toggle Button - Top Right Corner */}
       <TouchableOpacity 
         style={styles.cameraToggleButton}
-        onPress={() => setCameraEnabled(!cameraEnabled)}
+        onPress={async () => {
+          console.log('📷 Camera toggle pressed. Current state:', cameraEnabled, '-> New state:', !cameraEnabled);
+          
+          if (!cameraEnabled) {
+            // Trying to enable camera - check permissions first
+            if (!permission?.granted) {
+              console.log('📷 Camera permission not granted, requesting...');
+              const result = await requestPermission();
+              console.log('📷 Permission request result:', result);
+              if (!result.granted) {
+                Alert.alert(
+                  'Camera Permission Required',
+                  'Please grant camera permission to use the AR camera feature.',
+                  [{ text: 'OK' }]
+                );
+                return;
+              }
+            }
+          }
+          
+          setCameraEnabled(!cameraEnabled);
+        }}
       >
         <Ionicons 
           name={cameraEnabled ? "camera" : "camera-outline"} 
@@ -238,6 +318,7 @@ export default function ARCoreView({ onPhotoCapture }: ARCoreViewProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#000000', // Ensure container is black
   },
   cameraBackground: {
     position: 'absolute',
@@ -245,7 +326,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    zIndex: 0,
+    zIndex: 0, // Behind AR stars
   },
   blackBackground: {
     position: 'absolute',
@@ -253,7 +334,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: theme.colors.black,
+    backgroundColor: '#000000', // Pure black, not theme color
     zIndex: 0,
   },
   cameraToggleButton: {
@@ -280,9 +361,8 @@ const styles = StyleSheet.create({
   },
   captureButton: {
     position: 'absolute',
-    bottom: 100,
-    left: '50%',
-    marginLeft: -35,
+    bottom: 180, // Move higher to avoid constellation info button
+    right: 20, // Position on the right side over scanner area
     width: 70,
     height: 70,
     borderRadius: 35,
@@ -291,7 +371,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 3,
     borderColor: theme.colors.primary,
-    zIndex: 1000,
+    zIndex: 1002, // Higher than constellation info button
     ...theme.shadows.large,
   },
   captureButtonInner: {
@@ -302,7 +382,7 @@ const styles = StyleSheet.create({
   },
   constellationInfoButton: {
     position: 'absolute',
-    bottom: 50,
+    bottom: 120,
     left: 20,
     right: 20,
     backgroundColor: theme.colors.overlayDark,

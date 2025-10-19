@@ -168,7 +168,7 @@ export const AuthProvider = ({ children }) => {
           return { 
             data, 
             error: {
-              message: 'Account created! Please check your email and click the confirmation link, then sign in manually.',
+              message: '✅ Account created! Please check your email and click the confirmation link, then sign in manually.',
               code: 'EMAIL_NOT_CONFIRMED'
             }
           };

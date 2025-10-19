@@ -63,7 +63,7 @@ const TwinklingStar = ({ style }) => {
 
 
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
-import { Onboarding } from './src/components/Onboarding';
+import { Login } from './src/components/Login';
 
 // Main app content component
 function AppContent() {
@@ -288,7 +288,7 @@ function AppContent() {
   }
 
   if (!user) {
-    return <Onboarding />;
+    return <Login />;
   }
 
   // If user exists but profile is still loading, show loading screen
@@ -302,9 +302,9 @@ function AppContent() {
     );
   }
 
-  // If user exists but no profile after loading is complete, show onboarding
+  // If user exists but no profile after loading is complete, show login
   if (user && !profile && !loading) {
-    return <Onboarding />;
+    return <Login />;
   }
 
   if (currentScreen === 'loading') {

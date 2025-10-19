@@ -75,8 +75,17 @@ export const ARStarOverlay = ({ location, cameraMode = true, showDaytimeOverlay 
       // Use compass heading if available, otherwise use 0 (North)
       const currentHeading = isSupported ? heading : 0;
       // Use enhanced visibility calculation with pitch and roll
-      const visible = AstronomyCalculator.getVisibleStars(starPositions, currentHeading, pitch, roll, 25);
+      const visible = AstronomyCalculator.getVisibleStars(starPositions, currentHeading, pitch, roll, 60); // Match the field of view
       setVisibleStars(visible);
+      
+      // Debug logging
+      console.log('Orientation Debug:', {
+        heading: currentHeading,
+        pitch: pitch,
+        roll: roll,
+        isSupported: isSupported,
+        visibleStarsCount: visible.length
+      });
     }
   }, [heading, starPositions, isSupported, pitch, roll]);
 
@@ -96,15 +105,30 @@ export const ARStarOverlay = ({ location, cameraMode = true, showDaytimeOverlay 
     const currentHeading = isSupported ? heading : 0;
 
     // Use the new astronomy calculator method with roll compensation
-    return AstronomyCalculator.horizontalToScreen(
+    const result = AstronomyCalculator.horizontalToScreen(
       azimuth, 
       altitude, 
       currentHeading, 
       pitch, 
       roll, 
       screenWidth, 
-      screenHeight
+      screenHeight,
+      60 // Field of view in degrees
     );
+    
+    // Debug logging for first few calls
+    if (Math.random() < 0.01) { // Log 1% of calls to avoid spam
+      console.log('Screen Position Debug:', {
+        azimuth: azimuth,
+        altitude: altitude,
+        heading: currentHeading,
+        pitch: pitch,
+        roll: roll,
+        result: result
+      });
+    }
+    
+    return result;
   };
 
   // Get star size and opacity based on magnitude and time of day

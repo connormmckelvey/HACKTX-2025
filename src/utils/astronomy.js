@@ -78,58 +78,54 @@ export class AstronomyCalculator {
         return true;
       })
       .map(constellation => {
-        // Calculate position for each star in the constellation
-        const starsWithPositions = constellation.stars.map(star => {
-          const position = this.equatorialToHorizontal(
-            star.ra,
-            star.dec,
-            location.coords.latitude,
-            lst
-          );
-
-          return {
-            ...star,
-            horizontalPosition: position,
-            visible: true // Enable daytime viewing - stars are always "visible" in the overlay
-          };
-        });
-
-        // Use the first visible star as reference for constellation position
-        const referenceStar = starsWithPositions.find(star => star.visible) || starsWithPositions[0];
+      // Calculate position for each star in the constellation
+      const starsWithPositions = constellation.stars.map(star => {
+        const position = this.equatorialToHorizontal(
+          star.ra,
+          star.dec,
+          location.coords.latitude,
+          lst
+        );
 
         return {
-          ...constellation,
-          stars: starsWithPositions,
-          horizontalPosition: referenceStar?.horizontalPosition || { altitude: 0, azimuth: 0 },
-          visible: true // Enable daytime viewing for constellations
+          ...star,
+          horizontalPosition: position,
+          visible: true // Enable daytime viewing - stars are always "visible" in the overlay
         };
       });
+
+      // Use the first visible star as reference for constellation position
+      const referenceStar = starsWithPositions.find(star => star.visible) || starsWithPositions[0];
+
+      return {
+        ...constellation,
+        stars: starsWithPositions,
+        horizontalPosition: referenceStar?.horizontalPosition || { altitude: 0, azimuth: 0 },
+        visible: true // Enable daytime viewing for constellations
+      };
+    });
   }
 
   // Calculate which stars should be visible based on device orientation (heading, pitch, roll)
   static getVisibleStars(starPositions, heading, pitch, roll, fieldOfView = 60) {
+    const verticalFOV = 90; // Vertical field of view in degrees (increased to match horizontalToScreen)
+    
     return starPositions.filter(constellation => {
       if (!constellation.visible) return false;
 
       // Filter stars within the field of view
       const visibleStars = constellation.stars.filter(star => {
-      if (!star.visible) return false;
+        if (!star.visible) return false;
 
         // Calculate angular distance from center of view (azimuth)
-      const angularDistance = Math.abs(star.horizontalPosition.azimuth - heading);
+        const angularDistance = Math.abs(star.horizontalPosition.azimuth - heading);
         const minDistance = Math.min(angularDistance, 360 - angularDistance);
         
         // Check if star is within horizontal field of view
         const inHorizontalFOV = minDistance <= fieldOfView / 2;
         
         // Calculate vertical field of view based on device pitch
-        // Device pitch affects what altitude range is visible
         const starAltitude = star.horizontalPosition.altitude;
-        const verticalFOV = 45; // Vertical field of view in degrees
-        
-        // Adjust visible altitude range based on device pitch
-        // When device is flat (pitch ~0), stars above horizon are visible
-        // When device is tilted up (negative pitch), more stars above horizon are visible
         const centerAltitude = -pitch; // Invert pitch for altitude calculation
         const altitudeDifference = Math.abs(starAltitude - centerAltitude);
         const inVerticalFOV = altitudeDifference <= verticalFOV / 2;
@@ -145,11 +141,10 @@ export class AstronomyCalculator {
         if (!star.visible) return false;
         
         const angularDistance = Math.abs(star.horizontalPosition.azimuth - heading);
-      const minDistance = Math.min(angularDistance, 360 - angularDistance);
+        const minDistance = Math.min(angularDistance, 360 - angularDistance);
         const inHorizontalFOV = minDistance <= fieldOfView / 2;
         
         const starAltitude = star.horizontalPosition.altitude;
-        const verticalFOV = 45;
         const centerAltitude = -pitch;
         const altitudeDifference = Math.abs(starAltitude - centerAltitude);
         const inVerticalFOV = altitudeDifference <= verticalFOV / 2;
@@ -251,24 +246,38 @@ export class AstronomyCalculator {
     }
   }
 
-  // Convert horizontal coordinates to screen coordinates with roll compensation
-  static horizontalToScreen(azimuth, altitude, heading, pitch, roll, screenWidth, screenHeight) {
+  // Convert horizontal coordinates to screen coordinates with proper device orientation mapping
+  static horizontalToScreen(azimuth, altitude, heading, pitch, roll, screenWidth, screenHeight, fieldOfView = 60) {
     // Calculate relative azimuth (accounting for device heading)
     let relativeAzimuth = (azimuth - heading + 360) % 360;
     
-    // Convert to screen X coordinate
-    const x = (relativeAzimuth / 360) * screenWidth;
+    // Normalize relative azimuth to [-180, 180] range for easier calculation
+    if (relativeAzimuth > 180) {
+      relativeAzimuth -= 360;
+    }
+    
+    // Convert azimuth to screen X coordinate
+    // Map the field of view to screen width, with center of FOV at screen center
+    const halfFOV = fieldOfView / 2;
+    const normalizedAzimuth = relativeAzimuth / halfFOV; // Normalize to [-1, 1] range
+    // Fix: Stars to the right of center should appear on the LEFT of screen (inverted)
+    const x = (screenWidth / 2) - (normalizedAzimuth * (screenWidth / 2));
     
     // Convert altitude to screen Y coordinate
-    // Altitude 90° = zenith (top of screen), 0° = horizon (middle), -90° = nadir (bottom)
-    const centerAltitude = -pitch; // Device's altitude center
+    // Device pitch affects what altitude appears at screen center
+    const centerAltitude = -pitch; // Invert pitch for altitude calculation
     const relativeAltitude = altitude - centerAltitude;
     
-    // Map altitude to screen Y (inverted because screen Y increases downward)
-    const y = (screenHeight / 2) - (relativeAltitude / 90) * (screenHeight / 2);
+    // Map altitude to screen Y with proper field of view
+    // Use vertical field of view (increased to reduce sensitivity)
+    const verticalFOV = 90; // Increased from 45 to make movement less sensitive
+    const halfVerticalFOV = verticalFOV / 2;
+    const normalizedAltitude = relativeAltitude / halfVerticalFOV; // Normalize to [-1, 1] range
+    // Fix: When looking up (positive relativeAltitude), stars should move UP on screen
+    const y = (screenHeight / 2) + (normalizedAltitude * (screenHeight / 2));
     
     // Apply roll compensation
-    // Roll affects the rotation of the horizon line
+    // Roll affects the rotation of the entire view
     const rollRad = roll * (Math.PI / 180);
     const centerX = screenWidth / 2;
     const centerY = screenHeight / 2;

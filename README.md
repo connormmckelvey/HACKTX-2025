@@ -1,4 +1,4 @@
-# Ancestral Skies
+# Skylore
 
 [# hi im connor
 # hello im carson

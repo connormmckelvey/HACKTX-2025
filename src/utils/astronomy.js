@@ -108,7 +108,7 @@ export class AstronomyCalculator {
 
   // Calculate which stars should be visible based on device orientation (heading, pitch, roll)
   static getVisibleStars(starPositions, heading, pitch, roll, fieldOfView = 60) {
-    const verticalFOV = 90; // Vertical field of view in degrees (increased to match horizontalToScreen)
+    const verticalFOV = 90; // Vertical field of view in degrees
     
     return starPositions.filter(constellation => {
       if (!constellation.visible) return false;
@@ -117,20 +117,34 @@ export class AstronomyCalculator {
       const visibleStars = constellation.stars.filter(star => {
         if (!star.visible) return false;
 
-        // Calculate angular distance from center of view (azimuth)
-        const angularDistance = Math.abs(star.horizontalPosition.azimuth - heading);
-        const minDistance = Math.min(angularDistance, 360 - angularDistance);
+        // Calculate horizontal angular distance from device heading
+        let horizontalAngle = star.horizontalPosition.azimuth - heading;
+        while (horizontalAngle > 180) horizontalAngle -= 360;
+        while (horizontalAngle < -180) horizontalAngle += 360;
+        
+        // Apply roll compensation
+        const rollCompensatedAngle = horizontalAngle + (roll * 0.3);
         
         // Check if star is within horizontal field of view
-        const inHorizontalFOV = minDistance <= fieldOfView / 2;
+        const inHorizontalFOV = Math.abs(rollCompensatedAngle) <= fieldOfView / 2;
         
-        // Calculate vertical field of view based on device pitch
-        const starAltitude = star.horizontalPosition.altitude;
-        const centerAltitude = -pitch; // Invert pitch for altitude calculation
-        const altitudeDifference = Math.abs(starAltitude - centerAltitude);
-        const inVerticalFOV = altitudeDifference <= verticalFOV / 2;
+        // Calculate what altitude the device is looking at based on pitch
+        // When pitch = 0, device is looking at horizon (altitude = 0)
+        // When pitch = -30, device is looking 30° above horizon
+        // When pitch = +30, device is looking 30° below horizon
+        const deviceLookingAtAltitude = -pitch; // Invert pitch for altitude calculation
         
-        return inHorizontalFOV && inVerticalFOV;
+        // Calculate vertical angle from device's viewing direction
+        const verticalAngle = star.horizontalPosition.altitude - deviceLookingAtAltitude;
+        
+        // Check if star is within vertical field of view
+        const inVerticalFOV = Math.abs(verticalAngle) <= verticalFOV / 2;
+        
+        // CRITICAL: Only show stars that are above the horizon
+        // Stars below horizon (altitude < 0) should never be visible
+        const aboveHorizon = star.horizontalPosition.altitude > 0;
+        
+        return inHorizontalFOV && inVerticalFOV && aboveHorizon;
       });
 
       // Return constellation if it has visible stars
@@ -140,16 +154,22 @@ export class AstronomyCalculator {
       stars: constellation.stars.filter(star => {
         if (!star.visible) return false;
         
-        const angularDistance = Math.abs(star.horizontalPosition.azimuth - heading);
-        const minDistance = Math.min(angularDistance, 360 - angularDistance);
-        const inHorizontalFOV = minDistance <= fieldOfView / 2;
+        // Same logic as above for filtering individual stars
+        let horizontalAngle = star.horizontalPosition.azimuth - heading;
+        while (horizontalAngle > 180) horizontalAngle -= 360;
+        while (horizontalAngle < -180) horizontalAngle += 360;
         
-        const starAltitude = star.horizontalPosition.altitude;
-        const centerAltitude = -pitch;
-        const altitudeDifference = Math.abs(starAltitude - centerAltitude);
-        const inVerticalFOV = altitudeDifference <= verticalFOV / 2;
+        const rollCompensatedAngle = horizontalAngle + (roll * 0.3);
+        const inHorizontalFOV = Math.abs(rollCompensatedAngle) <= fieldOfView / 2;
         
-        return inHorizontalFOV && inVerticalFOV;
+        const deviceLookingAtAltitude = -pitch;
+        const verticalAngle = star.horizontalPosition.altitude - deviceLookingAtAltitude;
+        const inVerticalFOV = Math.abs(verticalAngle) <= verticalFOV / 2;
+        
+        // CRITICAL: Only show stars that are above the horizon
+        const aboveHorizon = star.horizontalPosition.altitude > 0;
+        
+        return inHorizontalFOV && inVerticalFOV && aboveHorizon;
       })
     }));
   }
@@ -246,47 +266,56 @@ export class AstronomyCalculator {
     }
   }
 
-  // Convert horizontal coordinates to screen coordinates with proper device orientation mapping
+  // Convert horizontal coordinates to screen coordinates using device as camera
   static horizontalToScreen(azimuth, altitude, heading, pitch, roll, screenWidth, screenHeight, fieldOfView = 60) {
-    // Calculate relative azimuth (accounting for device heading)
-    let relativeAzimuth = (azimuth - heading + 360) % 360;
+    // Treat stars as fixed points in 3D space
+    // Device orientation acts as a camera looking at the fixed sky dome
     
-    // Normalize relative azimuth to [-180, 180] range for easier calculation
-    if (relativeAzimuth > 180) {
-      relativeAzimuth -= 360;
+    // CRITICAL: Only show stars above the horizon
+    // Stars below horizon (altitude < 0) should never be visible
+    if (altitude <= 0) {
+      return { x: -1000, y: -1000 }; // Off-screen
     }
     
-    // Convert azimuth to screen X coordinate
-    // Map the field of view to screen width, with center of FOV at screen center
-    const halfFOV = fieldOfView / 2;
-    const normalizedAzimuth = relativeAzimuth / halfFOV; // Normalize to [-1, 1] range
-    // Fix: Stars to the right of center should appear on the LEFT of screen (inverted)
-    const x = (screenWidth / 2) - (normalizedAzimuth * (screenWidth / 2));
+    // Calculate the angular distance from where the device is pointing
+    // This determines if the star is in the field of view
+    let horizontalAngle = azimuth - heading;
     
-    // Convert altitude to screen Y coordinate
-    // Device pitch affects what altitude appears at screen center
-    const centerAltitude = -pitch; // Invert pitch for altitude calculation
-    const relativeAltitude = altitude - centerAltitude;
+    // Normalize to [-180, 180] range
+    while (horizontalAngle > 180) horizontalAngle -= 360;
+    while (horizontalAngle < -180) horizontalAngle += 360;
     
-    // Map altitude to screen Y with proper field of view
-    // Use vertical field of view (increased to reduce sensitivity)
-    const verticalFOV = 90; // Increased from 45 to make movement less sensitive
+    // Apply roll compensation (device tilt affects horizontal view)
+    const rollCompensatedAngle = horizontalAngle + (roll * 0.3);
+    
+    // Check if star is within horizontal field of view
+    const halfHorizontalFOV = fieldOfView / 2;
+    if (Math.abs(rollCompensatedAngle) > halfHorizontalFOV) {
+      return { x: -1000, y: -1000 }; // Off-screen
+    }
+    
+    // Calculate vertical angle from device's pitch
+    // When device pitches up (negative pitch), we see higher altitudes
+    const verticalAngle = altitude - (-pitch); // Invert pitch: negative pitch = looking up
+    
+    // Check if star is within vertical field of view
+    const verticalFOV = 90;
     const halfVerticalFOV = verticalFOV / 2;
-    const normalizedAltitude = relativeAltitude / halfVerticalFOV; // Normalize to [-1, 1] range
-    // Fix: When looking up (positive relativeAltitude), stars should move UP on screen
-    const y = (screenHeight / 2) + (normalizedAltitude * (screenHeight / 2));
+    if (Math.abs(verticalAngle) > halfVerticalFOV) {
+      return { x: -1000, y: -1000 }; // Off-screen
+    }
     
-    // Apply roll compensation
-    // Roll affects the rotation of the entire view
-    const rollRad = roll * (Math.PI / 180);
-    const centerX = screenWidth / 2;
-    const centerY = screenHeight / 2;
+    // Convert angles to screen coordinates
+    // Horizontal: map angular distance to screen X
+    const normalizedHorizontal = rollCompensatedAngle / halfHorizontalFOV;
+    const x = (screenWidth / 2) + (normalizedHorizontal * (screenWidth / 2));
     
-    // Rotate coordinates around screen center
-    const rotatedX = centerX + (x - centerX) * Math.cos(rollRad) - (y - centerY) * Math.sin(rollRad);
-    const rotatedY = centerY + (x - centerX) * Math.sin(rollRad) + (y - centerY) * Math.cos(rollRad);
+    // Vertical: map altitude difference to screen Y
+    // When looking up (positive verticalAngle), stars appear higher on screen
+    const normalizedVertical = verticalAngle / halfVerticalFOV;
+    const y = (screenHeight / 2) - (normalizedVertical * (screenHeight / 2)); // Invert Y so up = higher on screen
     
-    return { x: rotatedX, y: rotatedY };
+    return { x, y };
   }
 }
 
@@ -407,7 +436,7 @@ const CONSTELLATIONS = [
     seasons: ['fall', 'winter']
   },
   {
-    id: 2,
+    id: 6,
     name: "Canis Major - The Great Dog",
     story: "Following Orion across the sky is his faithful hunting dog, Canis Major. The brilliant star Sirius, the brightest star in our night sky, marks the dog's eye. In indigenous traditions, Sirius was often associated with the spirit of the wolf or dog, a loyal companion and guide. This constellation reminds us of the importance of loyalty, friendship, and the bond between humans and animals.",
     artwork: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -428,7 +457,7 @@ const CONSTELLATIONS = [
     lines: [[0, 1], [1, 2], [2, 3]]
   },
   {
-    id: 3,
+    id: 7,
     name: "Taurus - The Bull",
     story: "The constellation Taurus represents the great bull that once roamed the plains. The bright red star Aldebaran marks the bull's eye, while the Pleiades cluster forms a distinctive pattern on its shoulder. In many indigenous cultures, the bull symbolizes strength, determination, and the power of nature. This constellation appears in winter skies, reminding us of the endurance needed to survive the cold months.",
     artwork: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -452,7 +481,7 @@ const CONSTELLATIONS = [
     lines: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7]]
   },
   {
-    id: 4,
+    id: 8,
     name: "Gemini - The Twins",
     story: "The constellation Gemini represents the twin brothers who were inseparable companions. The bright stars Castor and Pollux mark their heads, shining side by side in the winter sky. In indigenous stories, twins often represent balance, duality, and the connection between earth and sky. This constellation teaches us about brotherhood, partnership, and the strength that comes from unity.",
     artwork: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -472,7 +501,7 @@ const CONSTELLATIONS = [
     lines: [[0, 1], [1, 2], [2, 3]]
   },
   {
-    id: 5,
+    id: 9,
     name: "Auriga - The Charioteer",
     story: "Auriga represents the charioteer who guides the celestial horses across the sky. The bright star Capella marks the charioteer's shoulder, shining with a golden light. In indigenous traditions, this constellation was often associated with the spirit guide who leads souls on their journey. The charioteer reminds us of the importance of guidance, direction, and helping others find their way.",
     artwork: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -493,7 +522,7 @@ const CONSTELLATIONS = [
     lines: [[0, 1], [1, 2], [2, 3]]
   },
   {
-    id: 6,
+    id: 10,
     name: "Canis Minor - The Little Dog",
     story: "Canis Minor is the smaller hunting dog that accompanies Orion and Canis Major. The bright star Procyon marks the little dog's eye, shining with a steady light. In indigenous stories, this constellation represents the smaller but equally important companions who support the great hunters. The little dog teaches us that every member of the pack has value and contributes to the whole.",
     artwork: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -513,24 +542,4 @@ const CONSTELLATIONS = [
     ],
     lines: [[0, 1]]
   },
-  {
-    id: 7,
-    name: "Perseus - The Hero",
-    story: "Perseus represents the great hero who saved the people from the sea monster. The constellation shows him holding the head of Medusa, with the bright star Mirfak marking his shoulder. In indigenous traditions, Perseus represents the protector who defends the community from danger. This constellation teaches us about courage, heroism, and the willingness to stand up for others.",
-    artwork: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      <path d="M20 50 Q30 45 40 50 Q50 55 60 50 Q70 45 80 50" stroke="#FFD700" stroke-width="2" fill="none"/>
-      <circle cx="30" cy="50" r="2" fill="#FFD700"/>
-      <circle cx="50" cy="52" r="2" fill="#FFD700"/>
-      <circle cx="70" cy="48" r="2" fill="#FFD700"/>
-      <path d="M25 45 L35 55 M45 47 L55 57 M65 43 L75 53" stroke="#FFD700" stroke-width="1"/>
-    </svg>`,
-    stars: [
-      // Perseus constellation
-      { ra: 3.405, dec: 49.86, name: "Mirfak", magnitude: 1.79 },
-      { ra: 3.136, dec: 40.96, name: "Algol", magnitude: 2.12 },
-      { ra: 2.904, dec: 35.79, name: "Atik", magnitude: 2.87 },
-      { ra: 3.158, dec: 40.01, name: "Menkib", magnitude: 3.00 }
-    ],
-    lines: [[0, 1], [1, 2], [2, 3]]
-  }
 ];

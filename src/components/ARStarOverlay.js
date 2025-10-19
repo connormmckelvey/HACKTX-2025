@@ -78,14 +78,25 @@ export const ARStarOverlay = ({ location, cameraMode = true, showDaytimeOverlay 
       const visible = AstronomyCalculator.getVisibleStars(starPositions, currentHeading, pitch, roll, 60); // Match the field of view
       setVisibleStars(visible);
       
-      // Debug logging
-      console.log('Orientation Debug:', {
-        heading: currentHeading,
-        pitch: pitch,
-        roll: roll,
-        isSupported: isSupported,
-        visibleStarsCount: visible.length
-      });
+      // Debug logging with star altitude information
+      if (visible.length > 0) {
+        const starAltitudes = visible.flatMap(constellation => 
+          constellation.stars.map(star => ({
+            name: star.name,
+            altitude: star.horizontalPosition.altitude,
+            azimuth: star.horizontalPosition.azimuth
+          }))
+        );
+        
+        console.log('Orientation Debug:', {
+          heading: currentHeading,
+          pitch: pitch,
+          roll: roll,
+          isSupported: isSupported,
+          visibleStarsCount: visible.length,
+          starAltitudes: starAltitudes
+        });
+      }
     }
   }, [heading, starPositions, isSupported, pitch, roll]);
 
@@ -116,15 +127,19 @@ export const ARStarOverlay = ({ location, cameraMode = true, showDaytimeOverlay 
       60 // Field of view in degrees
     );
     
-    // Debug logging for first few calls
-    if (Math.random() < 0.01) { // Log 1% of calls to avoid spam
+    // Debug logging for first few calls - increased frequency for debugging
+    if (Math.random() < 0.1) { // Increased to 10% to see more data
       console.log('Screen Position Debug:', {
         azimuth: azimuth,
         altitude: altitude,
         heading: currentHeading,
         pitch: pitch,
         roll: roll,
-        result: result
+        result: result,
+        aboveHorizon: altitude > 0,
+        deviceLookingAtAltitude: -pitch,
+        horizontalAngle: azimuth - currentHeading,
+        timestamp: new Date().toISOString()
       });
     }
     
@@ -266,11 +281,23 @@ export const ARStarOverlay = ({ location, cameraMode = true, showDaytimeOverlay 
         >
           {isSupported ? `${Math.round(heading)}°` : 'Web Mode'}
         </SvgText>
+        
+        {/* Heading change indicator */}
+        <SvgText
+          x={screenWidth / 2}
+          y={70}
+          textAnchor="middle"
+          fill="#00FF00"
+          fontSize="12"
+          fontWeight="bold"
+        >
+          Heading: {heading.toFixed(1)}° {isSupported ? '(Compass)' : '(Roll-based)'}
+        </SvgText>
 
         {/* Day/Night indicator */}
         <SvgText
           x={screenWidth / 2}
-          y={75}
+          y={95}
           textAnchor="middle"
           fill={isDayTime ? "#FFA500" : "#FFD700"}
           fontSize="14"
@@ -297,9 +324,15 @@ export const ARStarOverlay = ({ location, cameraMode = true, showDaytimeOverlay 
                   endStar.horizontalPosition.altitude
                 );
 
+                // Skip lines where either star is off-screen
+                if (startPos.x < -500 || startPos.x > screenWidth + 500 || startPos.y < -500 || startPos.y > screenHeight + 500 ||
+                    endPos.x < -500 || endPos.x > screenWidth + 500 || endPos.y < -500 || endPos.y > screenHeight + 500) {
+                  return null;
+                }
+
                 return (
                   <Line
-                    key={index}
+                    key={`${constellation.id}-line-${index}`}
                     x1={startPos.x}
                     y1={startPos.y}
                     x2={endPos.x}
@@ -321,11 +354,17 @@ export const ARStarOverlay = ({ location, cameraMode = true, showDaytimeOverlay 
                   star.horizontalPosition.azimuth,
                   star.horizontalPosition.altitude
                 );
+                
+                // Skip stars that are off-screen
+                if (pos.x < -500 || pos.x > screenWidth + 500 || pos.y < -500 || pos.y > screenHeight + 500) {
+                  return null;
+                }
+                
                 const { size, opacity } = getStarProperties(star);
 
                 return (
                   <Circle
-                    key={index}
+                    key={`${constellation.id}-star-${index}`}
                     cx={pos.x}
                     cy={pos.y}
                     r={size}
@@ -338,7 +377,7 @@ export const ARStarOverlay = ({ location, cameraMode = true, showDaytimeOverlay 
         ))}
 
         {/* Constellation labels */}
-        {visibleStars.map((constellation) => {
+        {visibleStars.map((constellation, constellationIndex) => {
           // Use the position of the first visible star for the label
           const visibleStarsInConstellation = constellation.stars.filter(star => star.visible);
           if (visibleStarsInConstellation.length > 0) {
@@ -350,7 +389,7 @@ export const ARStarOverlay = ({ location, cameraMode = true, showDaytimeOverlay 
 
             return (
               <SvgText
-                key={`label-${constellation.id}`}
+                key={`constellation-label-${constellationIndex}-${constellation.id}`}
                 x={pos.x}
                 y={pos.y - 20}
                 textAnchor="middle"
@@ -409,7 +448,7 @@ export const ARStarOverlay = ({ location, cameraMode = true, showDaytimeOverlay 
           Pitch: {Math.round(pitch)}° {isPointingSkyward ? '☁️ Skyward' : '🌍 Ground'}
         </Text>
         <Text style={styles.debugText}>
-          Roll: {Math.round(roll)}°
+          Roll: {roll.toFixed(1)}°
         </Text>
         <Text style={styles.debugText}>
           Orientation: {orientationPermission === 'granted' ? '✅ Granted' : orientationPermission === 'denied' ? '❌ Denied' : '⏳ Pending'}

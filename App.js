@@ -16,100 +16,50 @@ import {
 import { Svg, Line, Circle, Path } from 'react-native-svg';
 import * as Location from 'expo-location';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ARStarOverlay } from './src/components/ARStarOverlay';
+import ARCoreView from './src/components/ARCoreView';
 import { OrientationTest } from './src/components/OrientationTest';
+import { PhotoCapture } from './src/components/PhotoCapture';
+import { PhotoGallery } from './src/components/PhotoGallery';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-// Import the real constellation data with astronomical coordinates
-import { AstronomyCalculator } from './src/utils/astronomy';
 
-// Animation for twinkling stars
-const TwinklingStar = ({ style }) => {
-  const twinkleAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const duration = Math.random() * 3000 + 2000;
-    const delay = Math.random() * 5000;
-
-    const animation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(twinkleAnim, {
-          toValue: 1,
-          duration: duration / 2,
-          useNativeDriver: true,
-          delay,
-        }),
-        Animated.timing(twinkleAnim, {
-          toValue: 0,
-          duration: duration / 2,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    animation.start();
-    return () => animation.stop();
-  }, []);
-
-  const opacity = twinkleAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.5, 1],
-  });
-
-  return <Animated.View style={[style, { opacity }]} />;
-};
+// Removed twinkling stars as requested
 
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Onboarding } from './src/components/Onboarding';
+import { AuthProvider, useAuth } from './src/contexts/AuthContext';
+import { Login } from './src/components/Login';
+import { ScannerTab } from './src/components/ScannerTab';
+import { CultureTab } from './src/components/CultureTab';
+import { CollectionTab } from './src/components/CollectionTab';
+import { SkyMapTab } from './src/components/SkyMapTab';
+import { supabase } from './src/config/supabase';
+import { ProfileTab } from './src/components/ProfileTab';
+import { Ionicons } from '@expo/vector-icons';
 
-export default function App() {
+// Main app content component
+function AppContent() {
+  const { user, profile, loading } = useAuth();
   const [location, setLocation] = useState(null);
-  const [profile, setProfile] = useState(null);
-  const [loadingProfile, setLoadingProfile] = useState(true);
-
-  useEffect(() => {
-    const loadProfile = async () => {
-      try {
-        const raw = await AsyncStorage.getItem('@ancestral_skies_profile');
-        if (raw) setProfile(JSON.parse(raw));
-      } catch (e) {
-        console.error('Failed to load profile', e);
-      } finally {
-        setLoadingProfile(false);
-      }
-    };
-
-    loadProfile();
-  }, []);
-
-  const handleOnboardingComplete = (savedProfile) => {
-    setProfile(savedProfile);
-  };
 
   const [locationPermission, setLocationPermission] = useState(null);
-  const [currentScreen, setCurrentScreen] = useState('loading');
+  const [currentScreen, setCurrentScreen] = useState('tabs');
   const [selectedConstellation, setSelectedConstellation] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [arMode, setArMode] = useState(true);
   const [cameraMode, setCameraMode] = useState(true);
   const [testMode, setTestMode] = useState(false);
+  const [showPhotoCapture, setShowPhotoCapture] = useState(false);
+  const [showPhotoGallery, setShowPhotoGallery] = useState(false);
+  const [selectedConstellationForPhoto, setSelectedConstellationForPhoto] = useState(null);
+  const [activeTab, setActiveTab] = useState('culture');
 
   // Animation refs
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const modalY = useRef(new Animated.Value(screenHeight)).current;
   const starAnim = useRef(new Animated.Value(1)).current;
 
-  // Pan responder for star map
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderMove: (evt, gestureState) => {
-        // Handle panning logic here if needed
-      },
-    })
-  );
+  // Removed pan responder as we're not using background stars
 
   useEffect(() => {
     checkLocationPermission();
@@ -127,7 +77,7 @@ export default function App() {
 
   // Debug logging for iPhone troubleshooting
   useEffect(() => {
-    console.log('🚀 Ancestral Skies App Started');
+    console.log('🚀 Skylore App Started');
     console.log('📍 Location permission:', locationPermission);
     console.log('📱 Platform:', Platform.OS);
     console.log('🔧 Current screen:', currentScreen);
@@ -196,21 +146,31 @@ export default function App() {
     });
   };
 
-  // Generate random background stars
-  const generateBackgroundStars = () => {
-    const stars = [];
-    for (let i = 0; i < 150; i++) { // Increased star count
-      stars.push({
-        id: i,
-        x: Math.random() * screenWidth,
-        y: Math.random() * screenHeight,
-        size: Math.random() * 2 + 1,
-      });
-    }
-    return stars;
+  const handlePhotoCapture = (photoUri) => {
+    console.log('📸 App.js handlePhotoCapture called with:', photoUri);
+    setSelectedConstellationForPhoto(null); // No specific constellation for AR photos
+    setShowPhotoCapture(true);
+    console.log('📸 PhotoCapture modal should now be visible from App.js');
   };
 
-  const backgroundStars = generateBackgroundStars();
+  // Removed background stars as requested
+
+  // Tab configuration
+  const tabs = [
+    { id: 'culture', label: 'Culture', icon: 'globe-outline', component: CultureTab },
+    { id: 'collection', label: 'Collection', icon: 'star-outline', component: CollectionTab },
+    { id: 'scanner', label: 'Scanner', icon: 'sparkles', component: ScannerTab },
+    { id: 'map', label: 'Sky Map', icon: 'map-outline', component: SkyMapTab },
+    { id: 'profile', label: 'Profile', icon: 'person-outline', component: ProfileTab },
+  ];
+
+  // Get active component
+  const ActiveComponent = tabs.find((tab) => tab.id === activeTab)?.component || ScannerTab;
+
+  // Render tab content based on active tab
+  const renderTabContent = () => {
+    return <ActiveComponent location={location} />;
+  };
 
   // Simple SVG renderer for constellation artwork
   const renderConstellationArtwork = (artworkSvg) => {
@@ -232,7 +192,7 @@ export default function App() {
     );
   };
 
-  if (loadingProfile) {
+  if (loading) {
     return (
       <View style={styles.loadingContainer}>
         <StatusBar barStyle="light-content" backgroundColor="#0c1445" />
@@ -241,14 +201,63 @@ export default function App() {
     );
   }
 
-  if (!profile) {
-    return <Onboarding onComplete={handleOnboardingComplete} />;
+  if (!user) {
+    return <Login />;
+  }
+
+  // If user exists but profile is still loading, show loading screen
+  if (user && !profile && loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <StatusBar barStyle="light-content" backgroundColor="#0c1445" />
+        <ActivityIndicator size="large" color="#FFD700" style={styles.loader} />
+        <Text style={styles.loadingText}>Setting up your profile...</Text>
+      </View>
+    );
+  }
+
+  // If user exists but no profile after loading is complete, show login
+  // BUT: If this is a new signup (user just created), show a message instead of redirecting
+  if (user && !profile && !loading) {
+    // Check if this is a new user (created recently)
+    const userCreatedAt = new Date(user.created_at);
+    const now = new Date();
+    const timeSinceCreation = now - userCreatedAt;
+    const isNewUser = timeSinceCreation < 30000; // 30 seconds
+    
+    if (isNewUser && !user.email_confirmed_at) {
+      // This is a new signup that needs email confirmation
+      return (
+        <View style={styles.container}>
+          <StatusBar barStyle="light-content" backgroundColor="#0c1445" />
+          <View style={styles.loadingContainer}>
+            <Text style={styles.starSymbol}>✨</Text>
+            <Text style={styles.loadingText}>✅ Account created!</Text>
+            <Text style={styles.emailConfirmationText}>
+              Please check your email and click the confirmation link, then sign in below.
+            </Text>
+            <TouchableOpacity 
+              style={styles.signInButton}
+              onPress={() => {
+                // Sign out the user so they can sign in after confirming email
+                supabase.auth.signOut();
+              }}
+            >
+              <Text style={styles.signInButtonText}>Sign In</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      );
+    }
+    
+    // Otherwise, show login for existing users without profiles
+    return <Login />;
   }
 
   if (currentScreen === 'loading') {
     return (
-      <LinearGradient colors={['#0c1445', '#1a2a6c', '#b22c81']} style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="#0c1445" />
+      <View style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="#000000" />
         <View style={styles.loadingContainer}>
         <Animated.View
           style={[
@@ -263,116 +272,134 @@ export default function App() {
         </Animated.View>
           <Text style={styles.loadingText}>Discovering the cosmos...</Text>
       </View>
-      </LinearGradient>
+      </View>
     );
   }
 
   if (currentScreen === 'welcome') {
     return (
-      <LinearGradient colors={['#0c1445', '#1a2a6c', '#b22c81']} style={styles.container}>
-      <Animated.View
-        style={[
-          styles.welcomeContainer,
-          {
-            opacity: fadeAnim,
-          },
-        ]}
-        onLayout={() => {
-          Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 1000,
-            useNativeDriver: true,
-          }).start();
-        }}
-      >
-        <StatusBar barStyle="light-content" backgroundColor="#0c1445" />
-        <Text style={styles.welcomeText}>
-          You are on the ancestral land of the Tonkawa, Lipan-Apache, Comanche, and Coahuiltecan people.
-          {'\n\n'}Welcome to their sky.
-        </Text>
-      </Animated.View>
-      </LinearGradient>
+      <View style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="#000000" />
+        <Animated.View
+          style={[
+            styles.welcomeContainer,
+            {
+              opacity: fadeAnim,
+            },
+          ]}
+          onLayout={() => {
+            Animated.timing(fadeAnim, {
+              toValue: 1,
+              duration: 1000,
+              useNativeDriver: true,
+            }).start();
+          }}
+        >
+          <Text style={styles.welcomeText}>
+            You are on the ancestral land of the Tonkawa, Lipan-Apache, Comanche, and Coahuiltecan people.
+            {'\n\n'}Welcome to their sky.
+          </Text>
+        </Animated.View>
+      </View>
     );
   }
 
   return (
-    <LinearGradient colors={['#0c1445', '#1a2a6c', '#b22c81']} style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0c1445" />
+    <View style={styles.appContainer}>
+      {currentScreen === 'starMap' ? (
+        <View style={styles.arContainer}>
+          <StatusBar barStyle="light-content" backgroundColor="#000000" />
+          
+          {/* Orientation Test Mode */}
+          {testMode && (
+            <OrientationTest location={location} />
+          )}
 
-      {/* Orientation Test Mode */}
-      {testMode && currentScreen === 'starMap' && (
-        <OrientationTest location={location} />
-      )}
-
-      {/* AR Star Overlay - Conditionally rendered to prevent issues */}
-      {!testMode && currentScreen === 'starMap' && (
-        <ARStarOverlay location={location} cameraMode={arMode && cameraMode} showDaytimeOverlay={true} />
-      )}
-
-
-      {/* Star Map Screen - only shown when not in camera ar mode */}
-      {(!arMode || !cameraMode) && (
-      <View style={styles.starMapContainer} {...panResponder.current.panHandlers}>
-        {/* Background stars */}
-        {backgroundStars.map((star) => (
-            <TwinklingStar
-            key={star.id}
-            style={[
-              styles.backgroundStar,
-              {
-                left: star.x,
-                top: star.y,
-                width: star.size,
-                height: star.size,
-              },
-            ]}
-          />
-        ))}
-
-          {/* Show a message that AR mode has better constellation viewing */}
-          <View style={styles.starMapMessage}>
-            <Text style={styles.starMapMessageText}>
-              Switch to AR mode for interactive constellations
-            </Text>
+          {/* AR Core View */}
+          {!testMode && (
+            <ARCoreView onPhotoCapture={handlePhotoCapture} />
+          )}
+        </View>
+      ) : (
+        <View style={styles.container}>
+          <StatusBar barStyle="light-content" backgroundColor="#000000" />
+          
+          {/* Main content area - Full screen */}
+          <View style={activeTab === 'scanner' ? styles.fullScreenContent : styles.mainContent}>
+            {renderTabContent()}
           </View>
         </View>
       )}
 
-      {/* Control Panel */}
-      <View style={styles.controlPanel}>
-        <TouchableOpacity
-          style={styles.controlButton}
-          onPress={() => setTestMode(!testMode)}
-        >
-          <Text style={styles.controlButtonIcon}>{testMode ? '🧪' : '🧪'}</Text>
-          <Text style={styles.controlButtonText}>{testMode ? 'Test' : 'Test'}</Text>
-        </TouchableOpacity>
+      {/* Bottom tab navigation */}
+      <View style={styles.bottomTabBar}>
+        <View style={styles.tabContainer}>
+          {tabs.map((tab) => {
+            const Icon = Ionicons;
+            const isActive = activeTab === tab.id;
+            const isScanner = tab.id === 'scanner';
 
-        {!testMode && (
-          <TouchableOpacity
-            style={styles.controlButton}
-            onPress={() => {
-              setArMode(!arMode);
-              // When switching to AR mode, ensure camera is on by default
-              if (!arMode) {
-                setCameraMode(true);
-              }
-            }}
-          >
-            <Text style={styles.controlButtonIcon}>{arMode ? '🗺️' : '✨'}</Text>
-            <Text style={styles.controlButtonText}>{arMode ? 'Map' : 'AR'}</Text>
-          </TouchableOpacity>
-        )}
-
-        {!testMode && arMode && (
-          <TouchableOpacity
-            style={styles.controlButton}
-            onPress={() => setCameraMode(!cameraMode)}
-          >
-            <Text style={styles.controlButtonIcon}>{cameraMode ? '📷' : '🌌'}</Text>
-            <Text style={styles.controlButtonText}>{cameraMode ? 'Camera' : 'Sky'}</Text>
-          </TouchableOpacity>
-        )}
+            return (
+              <TouchableOpacity
+                key={tab.id}
+                onPress={() => {
+                  setActiveTab(tab.id);
+                  // Show AR view only when scanner tab is active
+                  if (tab.id === 'scanner') {
+                    setCurrentScreen('starMap');
+                  } else {
+                    setCurrentScreen('tabs');
+                  }
+                }}
+                style={[
+                  styles.tabButton,
+                  isActive && styles.activeTabButton,
+                  isScanner && styles.scannerTabButton
+                ]}
+              >
+                {isScanner ? (
+                  <View style={styles.scannerButtonContainer}>
+                    <View style={[
+                      styles.scannerButton,
+                      isActive && styles.activeScannerButton
+                    ]}>
+                      <Icon
+                        name={tab.icon}
+                        size={24}
+                        color={isActive ? "#4a5c47" : "#f5e6d3"}
+                      />
+                    </View>
+                    <Text style={[
+                      styles.scannerTabLabel,
+                      isActive && styles.activeTabLabel
+                    ]}>
+                      {tab.label}
+                    </Text>
+                  </View>
+                ) : (
+                  <>
+                    <View style={styles.regularTabContent}>
+                      <Icon
+                        name={tab.icon}
+                        size={24}
+                        color={isActive ? "#4a5c47" : "#f5e6d3"}
+                      />
+                      {isActive && (
+                        <View style={styles.activeIndicator} />
+                      )}
+                    </View>
+                    <Text style={[
+                      styles.tabLabel,
+                      isActive && styles.activeTabLabel
+                    ]}>
+                      {tab.label}
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
 
 
@@ -416,14 +443,35 @@ export default function App() {
           </Animated.View>
         </View>
       </Modal>
-    </LinearGradient>
+
+      {/* Photo Capture Modal */}
+      <PhotoCapture
+        visible={showPhotoCapture}
+        onClose={() => setShowPhotoCapture(false)}
+        constellation={selectedConstellationForPhoto}
+        location={location}
+      />
+
+      {/* Photo Gallery Modal */}
+      <PhotoGallery
+        visible={showPhotoGallery}
+        onClose={() => setShowPhotoGallery(false)}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  appContainer: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#0c1445',
+    backgroundColor: '#1a1512',
+  },
+  arContainer: {
+    flex: 1,
+    backgroundColor: '#1a1512',
   },
   loadingContainer: {
     flex: 1,
@@ -433,7 +481,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: '#FFD700',
+    color: '#b5a792',
     fontFamily: Platform.OS === 'ios' ? 'Avenir Next' : 'Roboto',
   },
   starIcon: {
@@ -441,7 +489,7 @@ const styles = StyleSheet.create({
   },
   starSymbol: {
     fontSize: 60,
-    color: '#FFD700',
+    color: '#b5a792',
   },
   loader: {
     marginTop: 20,
@@ -455,20 +503,12 @@ const styles = StyleSheet.create({
   },
   welcomeText: {
     fontSize: 18,
-    color: '#FFFFFF',
+    color: '#f5e6d3',
     textAlign: 'center',
     lineHeight: 28,
     fontFamily: Platform.OS === 'ios' ? 'Avenir Next' : 'Roboto',
   },
-  starMapContainer: {
-    flex: 1,
-    position: 'relative',
-  },
-  backgroundStar: {
-    position: 'absolute',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 1,
-  },
+  // Removed star-related styles as requested
   constellationSvg: {
     position: 'absolute',
     width: '100%',
@@ -489,11 +529,11 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(26, 21, 18, 0.7)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#1a1f4a',
+    backgroundColor: '#2a221b',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     minHeight: screenHeight * 0.6,
@@ -502,7 +542,7 @@ const styles = StyleSheet.create({
   modalHandle: {
     width: 40,
     height: 4,
-    backgroundColor: '#FFD700',
+    backgroundColor: '#4a5c47',
     borderRadius: 2,
     alignSelf: 'center',
     marginTop: 10,
@@ -515,13 +555,13 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: 'rgba(255, 215, 0, 0.2)',
+    backgroundColor: 'rgba(74, 92, 71, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1,
   },
   closeButtonText: {
-    color: '#FFD700',
+    color: '#4a5c47',
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -541,44 +581,146 @@ const styles = StyleSheet.create({
   constellationName: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#FFD700',
+    color: '#b5a792',
     textAlign: 'center',
     marginBottom: 15,
     fontFamily: Platform.OS === 'ios' ? 'Avenir Next' : 'Roboto',
   },
   constellationStory: {
     fontSize: 16,
-    color: '#FFFFFF',
+    color: '#f5e6d3',
     lineHeight: 24,
     textAlign: 'left',
     fontFamily: Platform.OS === 'ios' ? 'Avenir Next' : 'Roboto',
   },
-  controlPanel: {
+  // Main Content Styles
+  mainContent: {
+    flex: 1,
+    paddingBottom: Platform.OS === 'ios' ? 90 : 70,
+  },
+  fullScreenContent: {
+    flex: 1,
+    paddingBottom: Platform.OS === 'ios' ? 90 : 70,
+  },
+  
+  // Snapchat-style Capture Button
+  snapchatCaptureButton: {
     position: 'absolute',
-    bottom: 40,
+    bottom: 100,
+    left: '50%',
+    marginLeft: -35,
+    zIndex: 10,
+  },
+  captureButtonOuter: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  captureButtonInner: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#fff',
+  },
+  
+  // Bottom Tab Navigation
+  bottomTabBar: {
+    position: 'absolute',
+    bottom: 0,
     left: 0,
     right: 0,
+    height: Platform.OS === 'ios' ? 90 : 70,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(139, 115, 85, 0.2)',
+    backgroundColor: 'rgba(26, 21, 18, 0.9)',
+    backdropFilter: 'blur(10px)',
+    zIndex: 9999,
+  },
+  tabContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-evenly',
     alignItems: 'center',
-    paddingVertical: 10,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    borderRadius: 30,
-    marginHorizontal: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 215, 0, 0.3)',
+    justifyContent: 'space-around',
+    paddingHorizontal: 10,
+    paddingTop: 10,
+    paddingBottom: Platform.OS === 'ios' ? 30 : 10,
+    maxWidth: screenWidth * 0.9,
+    alignSelf: 'center',
   },
-  controlButton: {
+  tabButton: {
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 10,
+    minWidth: 60,
   },
-  controlButtonIcon: {
-    fontSize: 28,
+  activeTabButton: {
+    backgroundColor: 'rgba(74, 92, 71, 0.1)',
   },
-  controlButtonText: {
-    color: '#FFD700',
+  scannerTabButton: {
+    marginTop: -10,
+  },
+  scannerButtonContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scannerButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(74, 92, 71, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 5,
+    borderWidth: 2,
+    borderColor: '#4a5c47',
+  },
+  activeScannerButton: {
+    backgroundColor: '#4a5c47',
+  },
+  scannerTabLabel: {
+    color: '#f5e6d3',
     fontSize: 12,
-    marginTop: 4,
-    fontFamily: Platform.OS === 'ios' ? 'Avenir Next' : 'Roboto',
+    fontWeight: '600',
+  },
+  regularTabContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    position: 'relative',
+  },
+  activeIndicator: {
+    position: 'absolute',
+    bottom: -2,
+    left: '50%',
+    marginLeft: -2.5,
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: '#4a5c47',
+  },
+  tabLabel: {
+    color: '#f5e6d3',
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 6,
+  },
+  activeTabLabel: {
+    color: '#4a5c47',
+    fontWeight: 'bold',
   },
   starMapMessage: {
     position: 'absolute',
@@ -589,13 +731,45 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   starMapMessageText: {
-    color: '#FFD700',
+    color: '#b5a792',
     fontSize: 16,
     textAlign: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(26, 21, 18, 0.7)',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 20,
     fontFamily: Platform.OS === 'ios' ? 'Avenir Next' : 'Roboto',
   },
+  emailConfirmationText: {
+    color: '#FFD700',
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 20,
+    marginBottom: 30,
+    paddingHorizontal: 20,
+    lineHeight: 24,
+  },
+  signInButton: {
+    backgroundColor: 'rgba(255, 215, 0, 0.2)',
+    borderColor: '#FFD700',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+  },
+  signInButtonText: {
+    color: '#FFD700',
+    fontSize: 16,
+    fontWeight: '600',
+  },
 });
+
+// Main App component with AuthProvider
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
+}

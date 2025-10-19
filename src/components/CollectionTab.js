@@ -40,13 +40,12 @@ export const CollectionTab = () => {
         Alert.alert('Error', 'Failed to load photos: ' + error.message);
       } else {
         setPhotos(data || []);
-        // Pre-load photo URLs
+        // Use image_url directly from database
         if (data && data.length > 0) {
           const urls = {};
           for (const photo of data) {
-            const { data: url } = await PhotoService.getPhotoUrl(photo.storage_path);
-            if (url) {
-              urls[photo.id] = url;
+            if (photo.image_url) {
+              urls[photo.id] = photo.image_url;
             }
           }
           setPhotoUrls(urls);

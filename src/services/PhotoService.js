@@ -9,8 +9,8 @@ export class PhotoService {
    * @param {number} photoData.latitude - Photo latitude
    * @param {number} photoData.longitude - Photo longitude
    * @param {string[]} photoData.constellation - Array of constellation names (empty for future AI analysis)
-   * @param {number} photoData.lightRating - Light pollution rating (1-5)
-   * @param {Date} photoData.takenAt - When photo was taken
+   * @param {number} photoData.brightnessRating - Brightness rating (1-5)
+   * @param {string} photoData.timestamp - When photo was taken (ISO string)
    * @returns {Promise<{data: Object|null, error: Error|null}>}
    */
   static async uploadPhoto(photoData) {
@@ -117,17 +117,26 @@ export class PhotoService {
 
       if (uploadError) throw uploadError;
 
+      // Generate public URL for the uploaded image
+      const { data: urlData } = supabase.storage
+        .from(STORAGE_BUCKETS.USER_PHOTOS)
+        .getPublicUrl(uploadData.path);
+      
+      const imageUrl = urlData.publicUrl;
+      console.log('📸 Generated image URL:', imageUrl);
+
       // Create photo metadata record
       const { data: photoRecord, error: recordError } = await supabase
         .from(TABLES.PHOTOS)
         .insert({
           user_id: userId,
           storage_path: uploadData.path,
+          image_url: imageUrl, // Store the public image URL
           latitude: photoData.latitude,
           longitude: photoData.longitude,
-          // constellation: photoData.constellation || [], // Temporarily disabled until DB migration
-          light_rating: photoData.lightRating,
-          taken_at: photoData.takenAt?.toISOString() || new Date().toISOString(),
+          constellation: photoData.constellation || [], // Array of constellation names
+          brightness_rating: photoData.brightnessRating,
+          taken_at: photoData.timestamp || new Date().toISOString(),
         })
         .select()
         .single();

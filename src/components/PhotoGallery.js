@@ -37,13 +37,12 @@ export const PhotoGallery = ({ visible, onClose }) => {
         Alert.alert('Error', 'Failed to load photos: ' + error.message);
       } else {
         setPhotos(data || []);
-        // Pre-load photo URLs
+        // Use image_url directly from database
         if (data && data.length > 0) {
           const urls = {};
           for (const photo of data) {
-            const { data: url } = await PhotoService.getPhotoUrl(photo.storage_path);
-            if (url) {
-              urls[photo.id] = url;
+            if (photo.image_url) {
+              urls[photo.id] = photo.image_url;
             }
           }
           setPhotoUrls(urls);
@@ -110,8 +109,8 @@ export const PhotoGallery = ({ visible, onClose }) => {
           <Text style={styles.photoDate}>
             {new Date(item.taken_at).toLocaleDateString()}
           </Text>
-          <Text style={styles.lightRating}>
-            Light Rating: {item.light_rating}/5
+          <Text style={styles.brightnessRating}>
+            Brightness Rating: {item.brightness_rating}/5
           </Text>
         </View>
       </TouchableOpacity>
@@ -155,7 +154,7 @@ export const PhotoGallery = ({ visible, onClose }) => {
                 Location: {selectedPhoto.latitude.toFixed(4)}, {selectedPhoto.longitude.toFixed(4)}
               </Text>
               <Text style={styles.detailText}>
-                Light Rating: {selectedPhoto.light_rating}/5
+                Brightness Rating: {selectedPhoto.brightness_rating}/5
               </Text>
             </View>
 

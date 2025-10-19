@@ -23,7 +23,7 @@ export const PhotoCapture = ({ visible, onClose, constellation, location }) => {
   const [cameraRef, setCameraRef] = useState(null);
   const isMountedRef = useRef(true);
   const [capturing, setCapturing] = useState(false);
-  const [lightRating, setLightRating] = useState(3);
+  const [brightnessRating, setBrightnessRating] = useState(3);
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [capturedPhotoUri, setCapturedPhotoUri] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -150,9 +150,9 @@ export const PhotoCapture = ({ visible, onClose, constellation, location }) => {
         uri: capturedPhotoUri,
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
-        constellation: [], // Empty array for future AI analysis
-        lightRating: lightRating,
-        takenAt: new Date(),
+        constellation: constellation ? [constellation.name] : [], // Array of constellation names
+        brightnessRating: brightnessRating,
+        timestamp: new Date().toISOString(),
       };
 
       const { data, error } = await PhotoService.uploadPhoto(photoData);
@@ -324,9 +324,9 @@ export const PhotoCapture = ({ visible, onClose, constellation, location }) => {
 
             {/* Rating Section */}
             <View style={styles.ratingSection}>
-              <Text style={styles.ratingTitle}>Rate Light Pollution</Text>
+              <Text style={styles.ratingTitle}>Rate Sky Brightness</Text>
               <Text style={styles.ratingSubtitle}>
-                How clear is the sky? (1 = Very polluted, 5 = Very clear)
+                How bright is the sky? (1 = Very dark, 5 = Very bright)
               </Text>
 
               <View style={styles.ratingButtons}>
@@ -335,14 +335,14 @@ export const PhotoCapture = ({ visible, onClose, constellation, location }) => {
                     key={rating}
                     style={[
                       styles.ratingButton,
-                      lightRating === rating && styles.ratingButtonSelected,
+                      brightnessRating === rating && styles.ratingButtonSelected,
                     ]}
-                    onPress={() => setLightRating(rating)}
+                    onPress={() => setBrightnessRating(rating)}
                   >
                     <Text
                       style={[
                         styles.ratingButtonText,
-                        lightRating === rating && styles.ratingButtonTextSelected,
+                        brightnessRating === rating && styles.ratingButtonTextSelected,
                       ]}
                     >
                       {rating}

@@ -75,7 +75,7 @@ export const OrientationTest = ({ location }) => {
           <Text style={styles.dataText}>Pitch: {Math.round(pitch)}°</Text>
           <Text style={styles.dataText}>Roll: {Math.round(roll)}°</Text>
           <Text style={styles.dataText}>Supported: {isSupported ? 'Yes' : 'No'}</Text>
-          <Text style={styles.dataText}>Accuracy: {Math.round(accuracy * 100)}%</Text>
+          <Text style={styles.dataText}>Accuracy: N/A</Text>
         </View>
       )}
 
